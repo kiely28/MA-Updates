@@ -1,0 +1,216 @@
+Mon Sept 08, 2025 - 06:18AM - Update
+
+Got it 👍 Let’s build your EditMeeting.aspx page so that when you click the Edit button in your GridView, it opens this page with the meetingId in the query string.
+
+We’ll do two parts:
+
+1. EditMeeting.aspx (markup) → a form to edit meeting details.
+
+
+2. EditMeeting.aspx.cs (code-behind) → loads meeting details from DB and updates them.
+
+
+
+
+---
+
+🔹 1. EditMeeting.aspx
+
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="EditMeeting.aspx.cs" Inherits="WebApplication1_MAL.EditMeeting" %>
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <title>Edit Meeting</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+    <form id="form1" runat="server" class="container mt-4">
+        <h3 class="mb-3">Edit Meeting</h3>
+
+        <asp:Label ID="lblMessage" runat="server" CssClass="text-danger fw-bold"></asp:Label>
+
+        <div class="mb-3">
+            <label for="txtTitle" class="form-label">Title</label>
+            <asp:TextBox ID="txtTitle" runat="server" CssClass="form-control"></asp:TextBox>
+        </div>
+
+        <div class="mb-3">
+            <label for="txtStartDate" class="form-label">Start Date & Time</label>
+            <asp:TextBox ID="txtStartDate" runat="server" CssClass="form-control"></asp:TextBox>
+        </div>
+
+        <div class="mb-3">
+            <label for="txtEndDate" class="form-label">End Date & Time</label>
+            <asp:TextBox ID="txtEndDate" runat="server" CssClass="form-control"></asp:TextBox>
+        </div>
+
+        <div class="mb-3">
+            <label for="txtVenue" class="form-label">Venue</label>
+            <asp:TextBox ID="txtVenue" runat="server" CssClass="form-control"></asp:TextBox>
+        </div>
+
+        <div class="mb-3">
+            <label for="ddlStatus" class="form-label">Status</label>
+            <asp:DropDownList ID="ddlStatus" runat="server" CssClass="form-select">
+                <asp:ListItem Text="Scheduled" Value="Scheduled"></asp:ListItem>
+                <asp:ListItem Text="Ongoing" Value="Ongoing"></asp:ListItem>
+                <asp:ListItem Text="Completed" Value="Completed"></asp:ListItem>
+                <asp:ListItem Text="Cancelled" Value="Cancelled"></asp:ListItem>
+            </asp:DropDownList>
+        </div>
+
+        <asp:HiddenField ID="hfMeetingId" runat="server" />
+
+        <asp:Button ID="btnUpdate" runat="server" CssClass="btn btn-success" Text="Update Meeting" OnClick="btnUpdate_Click" />
+        <a href="meetinglist1.aspx" class="btn btn-secondary">Cancel</a>
+    </form>
+</body>
+</html>
+
+
+---
+
+🔹 2. EditMeeting.aspx.cs (Code-behind)
+
+using System;
+using System.Data;
+using System.Data.SqlClient;
+using System.Configuration;
+
+namespace WebApplication1_MAL
+{
+    public partial class EditMeeting : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+            {
+                string meetingId = Request.QueryString["meetingId"];
+                if (!string.IsNullOrEmpty(meetingId))
+                {
+                    hfMeetingId.Value = meetingId;
+                    LoadMeetingDetails(meetingId);
+                }
+                else
+                {
+                    lblMessage.Text = "Invalid Meeting ID.";
+                    btnUpdate.Enabled = false;
+                }
+            }
+        }
+
+        private void LoadMeetingDetails(string meetingId)
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlCommand cmd = new SqlCommand("MA_GetMeetingById", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@MeetingID", meetingId);
+
+                conn.Open();
+                SqlDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    txtTitle.Text = reader["Title"].ToString();
+                    txtStartDate.Text = Convert.ToDateTime(reader["StartDateTime"]).ToString("yyyy-MM-dd HH:mm");
+                    txtEndDate.Text = Convert.ToDateTime(reader["EndDateTime"]).ToString("yyyy-MM-dd HH:mm");
+                    txtVenue.Text = reader["Venue"].ToString();
+                    ddlStatus.SelectedValue = reader["Status1"].ToString();
+                }
+                else
+                {
+                    lblMessage.Text = "Meeting not found.";
+                    btnUpdate.Enabled = false;
+                }
+            }
+        }
+
+        protected void btnUpdate_Click(object sender, EventArgs e)
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlCommand cmd = new SqlCommand("MA_UpdateMeeting", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@MeetingID", hfMeetingId.Value);
+                cmd.Parameters.AddWithValue("@Title", txtTitle.Text.Trim());
+                cmd.Parameters.AddWithValue("@StartDateTime", txtStartDate.Text.Trim());
+                cmd.Parameters.AddWithValue("@EndDateTime", txtEndDate.Text.Trim());
+                cmd.Parameters.AddWithValue("@Venue", txtVenue.Text.Trim());
+                cmd.Parameters.AddWithValue("@Status", ddlStatus.SelectedValue);
+
+                conn.Open();
+                int rows = cmd.ExecuteNonQuery();
+
+                if (rows > 0)
+                {
+                    Response.Redirect("meetinglist1.aspx");
+                }
+                else
+                {
+                    lblMessage.Text = "Failed to update meeting.";
+                }
+            }
+        }
+    }
+}
+
+
+---
+
+🔹 SQL Stored Procedures Needed
+
+You’ll need two stored procedures:
+
+MA_GetMeetingById
+
+CREATE PROCEDURE MA_GetMeetingById
+    @MeetingID INT
+AS
+BEGIN
+    SELECT MeetingId, Title, StartDateTime, EndDateTime, Venue, Status1
+    FROM tbl_Meetings
+    WHERE MeetingId = @MeetingID;
+END
+
+MA_UpdateMeeting
+
+CREATE PROCEDURE MA_UpdateMeeting
+    @MeetingID INT,
+    @Title NVARCHAR(200),
+    @StartDateTime DATETIME,
+    @EndDateTime DATETIME,
+    @Venue NVARCHAR(200),
+    @Status NVARCHAR(50)
+AS
+BEGIN
+    UPDATE tbl_Meetings
+    SET Title = @Title,
+        StartDateTime = @StartDateTime,
+        EndDateTime = @EndDateTime,
+        Venue = @Venue,
+        Status1 = @Status
+    WHERE MeetingId = @MeetingID;
+END
+
+
+---
+
+✅ With this setup:
+
+Clicking Edit in your GridView → redirects to EditMeeting.aspx?meetingId=123.
+
+The page loads details into the form.
+
+You can edit and click Update → saves to DB and redirects back to meeting list.
+
+
+
+---
+
+Do you want me to also integrate Bootstrap DateTime Picker for StartDate and EndDate, so it’s easier for users instead of typing manually?
+
