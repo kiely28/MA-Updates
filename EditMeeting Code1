@@ -564,3 +564,244 @@ No external JS libraries required.
 
 👉 Do you also want me to add validation so that End Date must always be greater than Start Date (both in client-side JS and server-side check)?
 
+Update 12:54
+
+Got it 👍
+You want the StartMeeting button in GridView to:
+
+1. Show a JavaScript confirm dialog before starting.
+
+
+2. If Yes → update the meeting’s status in tbl_meetings (Ongoing) and redirect to meetingattendance.aspx.
+
+
+3. If No → cancel.
+
+
+
+We can handle this with OnClientClick for the confirmation, and keep your RowCommand logic for updating + redirect.
+
+
+---
+
+🔹 GridView Markup (StartMeeting Button)
+
+Update your StartMeeting button like this:
+
+<asp:LinkButton ID="btnStartMeeting" runat="server"
+    CommandName="StartMeeting"
+    CommandArgument='<%# Eval("MeetingId") %>'
+    CssClass="btn btn-sm text-primary me-1"
+    ToolTip="Start Meeting"
+    OnClientClick="return confirm('⚠ Do you want to start this meeting? Once started, it will be marked as Ongoing.');">
+    <i class="far fa-eye"></i>
+</asp:LinkButton>
+
+✅ The OnClientClick="return confirm(...)" will stop the postback if the user clicks Cancel.
+If they click OK, it proceeds to the server.
+
+
+---
+
+🔹 Code-behind (RowCommand)
+
+Your existing gvMeetings_RowCommand already updates the meeting status and redirects.
+Here’s the final version for clarity:
+
+protected void gvMeetings_RowCommand(object sender, GridViewCommandEventArgs e)
+{
+    string meetingId = e.CommandArgument.ToString();
+
+    if (e.CommandName == "StartMeeting")
+    {
+        string connectionString = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+        using (SqlConnection conn = new SqlConnection(connectionString))
+        {
+            using (SqlCommand cmd = new SqlCommand("UpdateMeetingStatus", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@MeetingID", meetingId);
+                cmd.Parameters.AddWithValue("@Status", "Ongoing"); // pass new status
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        // Redirect to Attendance page
+        Response.Redirect($"meetingattendance.aspx?meetingId={meetingId}");
+    }
+
+    else if (e.CommandName == "EditMeeting")
+    {
+        Response.Redirect($"EditMeeting.aspx?meetingId={meetingId}");
+    }
+
+    else if (e.CommandName == "DeleteMeeting")
+    {
+        DeleteMeeting(meetingId);
+        LoadMeetings(); // refresh grid
+    }
+}
+
+
+---
+
+🔹 SQL Stored Procedure (UpdateMeetingStatus)
+
+Make sure your UpdateMeetingStatus SP accepts a Status parameter:
+
+CREATE PROCEDURE UpdateMeetingStatus
+    @MeetingID INT,
+    @Status NVARCHAR(50)
+AS
+BEGIN
+    UPDATE tbl_meetings
+    SET Status = @Status
+    WHERE MeetingID = @MeetingID;
+END
+
+
+---
+
+✅ Result:
+
+User clicks StartMeeting → confirm alert pops up.
+
+If Yes → meeting status set to Ongoing + redirected to meetingattendance.aspx.
+
+If No → nothing happens.
+
+
+
+---
+
+Do you also want me to make the StartMeeting button hidden/disabled when the meeting status is already Ongoing (like we did for Edit)?
+
+---
+Okay, I see 👌
+
+So now you want:
+
+If status = Scheduled → StartMeeting shows confirm alert → update DB status to Ongoing → redirect to meetingattendance.aspx.
+
+If status = Ongoing → user clicks StartMeeting → show alert (“Meeting already ongoing, continue?”) → redirect to meetingattendance.aspx without updating DB.
+
+
+We’ll handle this in two parts:
+
+
+---
+
+🔹 1. GridView Markup
+
+Give the Start button an ID so we can find it:
+
+<asp:LinkButton ID="btnStartMeeting" runat="server"
+    CommandName="StartMeeting"
+    CommandArgument='<%# Eval("MeetingId") %>'
+    CssClass="btn btn-sm text-primary me-1"
+    ToolTip="Start Meeting">
+    <i class="far fa-eye"></i>
+</asp:LinkButton>
+
+
+---
+
+🔹 2. Code-behind (RowDataBound → set proper JS alert)
+
+protected void gvMeetings_RowDataBound(object sender, GridViewRowEventArgs e)
+{
+    if (e.Row.RowType == DataControlRowType.DataRow)
+    {
+        Label lblStatus = (Label)e.Row.FindControl("lblStatus");
+        LinkButton btnStart = (LinkButton)e.Row.FindControl("btnStartMeeting");
+
+        if (lblStatus != null && btnStart != null)
+        {
+            if (lblStatus.Text == "Ongoing")
+            {
+                // Meeting already ongoing → continue to attendance
+                btnStart.OnClientClick = "return confirm('⚠ This meeting is already ongoing. Do you want to continue to the attendance page?');";
+            }
+            else
+            {
+                // Scheduled → update to ongoing first
+                btnStart.OnClientClick = "return confirm('⚠ Do you want to start this meeting? Once started, it will be marked as Ongoing.');";
+            }
+        }
+    }
+}
+
+
+---
+
+🔹 3. Code-behind (RowCommand)
+
+Update your RowCommand to check status again:
+
+protected void gvMeetings_RowCommand(object sender, GridViewCommandEventArgs e)
+{
+    string meetingId = e.CommandArgument.ToString();
+
+    if (e.CommandName == "StartMeeting")
+    {
+        string connectionString = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+        // Check status first
+        string status = "";
+        using (SqlConnection conn = new SqlConnection(connectionString))
+        using (SqlCommand cmd = new SqlCommand("SELECT Status FROM tbl_meetings WHERE MeetingID = @MeetingID", conn))
+        {
+            cmd.Parameters.AddWithValue("@MeetingID", meetingId);
+            conn.Open();
+            status = cmd.ExecuteScalar()?.ToString();
+        }
+
+        if (status == "Scheduled")
+        {
+            // Update to Ongoing
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SqlCommand cmd = new SqlCommand("UpdateMeetingStatus", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@MeetingID", meetingId);
+                cmd.Parameters.AddWithValue("@Status", "Ongoing");
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        // Redirect to attendance page either way
+        Response.Redirect($"meetingattendance.aspx?meetingId={meetingId}");
+    }
+
+    else if (e.CommandName == "EditMeeting")
+    {
+        Response.Redirect($"EditMeeting.aspx?meetingId={meetingId}");
+    }
+
+    else if (e.CommandName == "DeleteMeeting")
+    {
+        DeleteMeeting(meetingId);
+        LoadMeetings();
+    }
+}
+
+
+---
+
+✅ Behavior now:
+
+Scheduled meeting → alert (“Do you want to start?”) → DB updated → redirect.
+
+Ongoing meeting → alert (“Already ongoing, continue?”) → DB not updated → redirect.
+
+
+
+---
+
+Do you also want me to hide the Start button completely if the meeting is already Completed or Cancelled?
+
