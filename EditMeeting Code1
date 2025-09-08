@@ -315,3 +315,92 @@ Layout aligned using d-flex justify-content-between.
 👉 Do you want me to also add client-side validation (Bootstrap validation styles) so users can’t leave required fields blank before clicking Update?
 
 
+Update 10:36
+Ah ✅ that error comes from sending your datetime values as strings instead of DateTime to SQL Server.
+
+Right now, in your btnUpdate_Click you have:
+
+cmd.Parameters.AddWithValue("@StartDateTime", txtStartDate.Text.Trim());
+cmd.Parameters.AddWithValue("@EndDateTime", txtEndDate.Text.Trim());
+
+That sends nvarchar (string) to SQL, and if the string format doesn’t exactly match SQL Server’s expected format, you get:
+
+> Error converting datatype nvarchar to datetime
+
+
+
+
+---
+
+🔹 Fix: Convert to DateTime in C#
+
+Instead of sending plain strings, parse them to DateTime before passing to SQL:
+
+protected void btnUpdate_Click(object sender, EventArgs e)
+{
+    string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+    using (SqlConnection conn = new SqlConnection(connStr))
+    using (SqlCommand cmd = new SqlCommand("MA_UpdateMeeting", conn))
+    {
+        cmd.CommandType = CommandType.StoredProcedure;
+
+        cmd.Parameters.AddWithValue("@MeetingID", hfMeetingId.Value);
+        cmd.Parameters.AddWithValue("@Title", txtTitle.Text.Trim());
+        cmd.Parameters.AddWithValue("@Venue", txtVenue.Text.Trim());
+        cmd.Parameters.AddWithValue("@Status", ddlStatus.SelectedValue);
+
+        // Convert safely from TextBox to DateTime
+        DateTime startDate, endDate;
+        if (DateTime.TryParse(txtStartDate.Text, out startDate))
+        {
+            cmd.Parameters.Add("@StartDateTime", SqlDbType.DateTime).Value = startDate;
+        }
+        else
+        {
+            lblMessage.Text = "Invalid Start Date format.";
+            return;
+        }
+
+        if (DateTime.TryParse(txtEndDate.Text, out endDate))
+        {
+            cmd.Parameters.Add("@EndDateTime", SqlDbType.DateTime).Value = endDate;
+        }
+        else
+        {
+            lblMessage.Text = "Invalid End Date format.";
+            return;
+        }
+
+        conn.Open();
+        int rows = cmd.ExecuteNonQuery();
+
+        if (rows > 0)
+        {
+            Response.Redirect("meetinglist1.aspx");
+        }
+        else
+        {
+            lblMessage.Text = "Failed to update meeting.";
+        }
+    }
+}
+
+
+---
+
+🔹 Why this works
+
+DateTime.TryParse() converts the user input (string) into a proper DateTime object.
+
+SqlDbType.DateTime ensures SQL Server receives the correct type, not nvarchar.
+
+If parsing fails, you show a clear error instead of crashing.
+
+
+
+---
+
+⚡ Question for you:
+When you load the form, do you want the datetime textboxes (txtStartDate, txtEndDate) to automatically display in the correct format (yyyy-MM-ddTHH:mm), so that the HTML5 datetime-local input works properly?
+
