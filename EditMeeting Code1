@@ -404,3 +404,76 @@ If parsing fails, you show a clear error instead of crashing.
 ⚡ Question for you:
 When you load the form, do you want the datetime textboxes (txtStartDate, txtEndDate) to automatically display in the correct format (yyyy-MM-ddTHH:mm), so that the HTML5 datetime-local input works properly?
 
+
+
+Update 12:34
+
+Understood 👍 you mean the ASP.NET LinkButton that triggers the server-side EditMeeting command.
+You want:
+
+If Status = Ongoing → clicking Edit should show an alert and not redirect.
+
+For other statuses → normal redirect to EditMeeting.aspx.
+
+
+We’ll handle this in RowDataBound because it lets us check the bound status before rendering the row.
+
+
+---
+
+🔹 Code-behind (RowDataBound)
+
+Add this method to your page:
+
+protected void gvMeetings_RowDataBound(object sender, GridViewRowEventArgs e)
+{
+    if (e.Row.RowType == DataControlRowType.DataRow)
+    {
+        // Get the status text
+        Label lblStatus = (Label)e.Row.FindControl("lblStatus");
+
+        // Get the Edit button (server-side one)
+        LinkButton editButton = (LinkButton)e.Row.FindControl("EditButton");
+
+        if (lblStatus != null && lblStatus.Text == "Ongoing")
+        {
+            if (editButton != null)
+            {
+                // Block editing and show alert
+                editButton.OnClientClick = "alert('⚠ You cannot edit a meeting that is already ongoing.'); return false;";
+            }
+        }
+    }
+}
+
+
+---
+
+🔹 GridView Markup Change
+
+Right now your Edit button has no ID, so we can’t find it. Update it like this:
+
+<asp:LinkButton ID="EditButton" runat="server" 
+    CommandName="EditMeeting" CommandArgument='<%# Eval("MeetingId") %>' 
+    CssClass="btn btn-sm text-warning me-1" ToolTip="Edit">
+    <i class="fas fa-pencil-alt"></i>
+</asp:LinkButton>
+
+
+---
+
+🔹 What Happens
+
+When the GridView binds, if the row’s status = Ongoing, we attach an OnClientClick alert that cancels the postback.
+
+User sees:
+⚠ You cannot edit a meeting that is already ongoing.
+
+For Scheduled/Completed/Cancelled → Edit works normally (Response.Redirect("EditMeeting.aspx?...")).
+
+
+
+---
+
+👉 Do you also want me to completely hide the Edit button instead of disabling it with an alert for Ongoing meetings?
+
