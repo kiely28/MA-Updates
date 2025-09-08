@@ -214,3 +214,104 @@ You can edit and click Update → saves to DB and redirects back to meeting list
 
 Do you want me to also integrate Bootstrap DateTime Picker for StartDate and EndDate, so it’s easier for users instead of typing manually?
 
+
+
+Update 10:05
+
+Perfect 👍 Let’s make your Edit Meeting form look like a real Bootstrap form with proper layout and modern inputs. I’ll also integrate Bootstrap Date/Time pickers for StartDate and EndDate.
+
+
+---
+
+🔹 Updated EditMeeting.aspx (Bootstrap UI)
+
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="EditMeeting.aspx.cs" Inherits="WebApplication1_MAL.EditMeeting" %>
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <title>Edit Meeting</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <script src="js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+    <form id="form1" runat="server" class="container mt-5">
+        <div class="card shadow-lg rounded-3">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Edit Meeting</h4>
+            </div>
+            <div class="card-body">
+                <asp:Label ID="lblMessage" runat="server" CssClass="text-danger fw-bold d-block mb-3"></asp:Label>
+
+                <!-- Title -->
+                <div class="mb-3">
+                    <label for="txtTitle" class="form-label fw-semibold">Title</label>
+                    <asp:TextBox ID="txtTitle" runat="server" CssClass="form-control" placeholder="Enter meeting title"></asp:TextBox>
+                </div>
+
+                <!-- Start Date -->
+                <div class="mb-3">
+                    <label for="txtStartDate" class="form-label fw-semibold">Start Date & Time</label>
+                    <asp:TextBox ID="txtStartDate" runat="server" CssClass="form-control" TextMode="DateTimeLocal"></asp:TextBox>
+                </div>
+
+                <!-- End Date -->
+                <div class="mb-3">
+                    <label for="txtEndDate" class="form-label fw-semibold">End Date & Time</label>
+                    <asp:TextBox ID="txtEndDate" runat="server" CssClass="form-control" TextMode="DateTimeLocal"></asp:TextBox>
+                </div>
+
+                <!-- Venue -->
+                <div class="mb-3">
+                    <label for="txtVenue" class="form-label fw-semibold">Venue</label>
+                    <asp:TextBox ID="txtVenue" runat="server" CssClass="form-control" placeholder="Enter meeting venue"></asp:TextBox>
+                </div>
+
+                <!-- Status -->
+                <div class="mb-3">
+                    <label for="ddlStatus" class="form-label fw-semibold">Status</label>
+                    <asp:DropDownList ID="ddlStatus" runat="server" CssClass="form-select">
+                        <asp:ListItem Text="Scheduled" Value="Scheduled"></asp:ListItem>
+                        <asp:ListItem Text="Ongoing" Value="Ongoing"></asp:ListItem>
+                        <asp:ListItem Text="Completed" Value="Completed"></asp:ListItem>
+                        <asp:ListItem Text="Cancelled" Value="Cancelled"></asp:ListItem>
+                    </asp:DropDownList>
+                </div>
+
+                <asp:HiddenField ID="hfMeetingId" runat="server" />
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-between">
+                    <asp:Button ID="btnUpdate" runat="server" CssClass="btn btn-success px-4" Text="Update Meeting" OnClick="btnUpdate_Click" />
+                    <a href="meetinglist1.aspx" class="btn btn-secondary px-4">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</body>
+</html>
+
+
+---
+
+🔹 Key Bootstrap Enhancements
+
+Wrapped everything in a Bootstrap card (.card, .card-header, .card-body) for a modern look.
+
+Used fw-semibold, px-4, mt-5, mb-3 for spacing and typography.
+
+Used HTML5 datetime-local input via TextMode="DateTimeLocal" → gives a native date & time picker in Chrome/Edge/Firefox.
+
+Buttons styled with btn-success (Update) and btn-secondary (Cancel).
+
+Layout aligned using d-flex justify-content-between.
+
+
+
+---
+
+✅ With this, your Edit Meeting page looks professional, mobile-friendly, and consistent with Bootstrap styling.
+
+👉 Do you want me to also add client-side validation (Bootstrap validation styles) so users can’t leave required fields blank before clicking Update?
+
+
