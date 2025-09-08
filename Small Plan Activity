@@ -1,0 +1,37 @@
+Your proposal is already clear and well-structured 👍 I’ve polished the grammar, flow, and formatting slightly to make it more professional and easy to read:
+
+
+---
+
+Background
+Currently, the GNS+ Application Form retrieves employee details directly from tbl_employee. When section in-charges from other departments submit requests, mismatches in the GNS+ user ID are often overlooked due to auto-populated fields. This leads to incorrect entries, particularly for employees who still use the “PH” format (no APO account yet) but have recently created their APO accounts.
+
+Conclusion and Judgment
+To ensure data consistency and prevent incorrect GNS+ user IDs, the system should validate information against tbl_auth before retrieving details from tbl_employee.
+
+Target Setting
+Ensure 100% accuracy of GNS+ user ID retrieval by validating data against tbl_auth before tbl_employee.
+
+Proposal Details
+This proposal aims to improve the accuracy of employee information in the GNS+ Application Form by updating its data validation process. Currently, the system retrieves records directly from tbl_employee, which often results in mismatched or incorrect GNS+ user IDs, especially for employees using the “PH” format.
+
+The proposed change is to first check and validate employee information in tbl_auth before pulling details from tbl_employee. This adjustment will prevent overwriting valid GNS+ user IDs and ensure that updated accounts are reflected correctly.
+
+Expectation of Activity
+
+Improve accuracy of GNS+ user IDs.
+
+Minimize errors caused by auto-populated fields.
+
+Ensure consistency of records with official data in tbl_auth.
+
+Provide smoother request handling for departments.
+
+
+
+---
+
+✨ This version keeps it simple but formal enough for a proposal.
+
+Would you like me to also add a Final Message/Recommendation at the end, so it feels more complete and persuasive?
+
