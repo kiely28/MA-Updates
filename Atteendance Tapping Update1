@@ -88,3 +88,124 @@
     <script src="Scripts2/datatables-simple-demo.js"></script>
 </body>
 </html>
+
+-- Update - 0910 05:50AM
+Perfect 👍 thanks for sharing your meetingattendance.aspx.
+
+Right now, it’s just a skeleton UI — what you need is to connect it with the meeting you started in meetinglist1.aspx, so that:
+
+When you click Start Meeting in the GridView → it redirects with ?meetingId=123.
+
+On meetingattendance.aspx, you fetch that meeting’s Title + Date/Time and display them.
+
+Later you can add the tapping (attendance logging).
+
+
+
+---
+
+🔹 meetingattendance.aspx.cs (code-behind)
+
+Add this behind your meetingattendance.aspx page:
+
+using System;
+using System.Configuration;
+using System.Data.SqlClient;
+
+namespace WebApplication1_MAL
+{
+    public partial class meetingattendance1 : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+            {
+                string meetingId = Request.QueryString["meetingId"];
+                if (!string.IsNullOrEmpty(meetingId))
+                {
+                    LoadMeetingDetails(meetingId);
+                }
+                else
+                {
+                    lblTitle.Text = "Invalid Meeting";
+                    lblDateTime.Text = "";
+                }
+            }
+        }
+
+        private void LoadMeetingDetails(string meetingId)
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlCommand cmd = new SqlCommand("SELECT Title, StartDateTime, EndDateTime FROM tbl_meetings WHERE MeetingId = @MeetingId", conn))
+            {
+                cmd.Parameters.AddWithValue("@MeetingId", meetingId);
+                conn.Open();
+
+                SqlDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    lblTitle.Text = reader["Title"].ToString();
+                    lblDateTime.Text = $"{Convert.ToDateTime(reader["StartDateTime"]):MM-dd-yyyy hh:mm tt} - {Convert.ToDateTime(reader["EndDateTime"]):MM-dd-yyyy hh:mm tt}";
+                }
+                else
+                {
+                    lblTitle.Text = "Meeting not found";
+                    lblDateTime.Text = "";
+                }
+            }
+        }
+    }
+}
+
+
+---
+
+🔹 meetingattendance.aspx (markup changes)
+
+Replace the hardcoded Title and Date / Time with server labels:
+
+<h1 class="mt-3">
+    <asp:Label ID="lblTitle" runat="server" Text="Title"></asp:Label>
+</h1>
+<ol class="breadcrumb mb-4 mt-3">
+    <li class="breadcrumb-item active">
+        <asp:Label ID="lblDateTime" runat="server" Text="Date / Time"></asp:Label>
+    </li>
+</ol>
+
+
+---
+
+🔹 Flow now
+
+1. In meetinglist1.aspx → you click Start Meeting.
+
+If Scheduled → meeting status updated to Ongoing, redirect to meetingattendance.aspx?meetingId=123.
+
+If already Ongoing → alert confirms, then redirect without DB update.
+
+
+
+2. On meetingattendance.aspx →
+
+It reads meetingId from query string.
+
+Fetches Title + Start/End datetime from DB.
+
+Displays them in your page.
+
+
+
+
+
+---
+
+✅ This connects your GridView StartMeeting → MeetingAttendance flow.
+Later you can extend this page to show participant tapping input (employee ID scanning).
+
+Do you want me to also add the attendance tapping input field + duplicate prevention here?
+
+
+
