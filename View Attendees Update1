@@ -1,0 +1,327 @@
+Perfect 👍 you want to remove the inline SQL and replace it with a stored procedure for better maintainability and security.
+
+
+---
+
+🔹 Step 1: Create Stored Procedure in SQL Server
+
+CREATE PROCEDURE GetMeetingDetails
+    @MeetingId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT Title, StartDateTime, EndDateTime
+    FROM tbl_meetings
+    WHERE MeetingId = @MeetingId;
+END
+
+
+---
+
+🔹 Step 2: Update Code-Behind to Call Stored Procedure
+
+Here’s your revised meetingattendance1.aspx.cs:
+
+using System;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.Data;
+
+namespace WebApplication1_MAL
+{
+    public partial class meetingattendance1 : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+            {
+                string meetingId = Request.QueryString["meetingId"];
+                if (!string.IsNullOrEmpty(meetingId))
+                {
+                    LoadMeetingDetails(meetingId);
+                }
+                else
+                {
+                    lblTitle.Text = "Invalid Meeting";
+                    lblDateTime.Text = "";
+                }
+            }
+        }
+
+        private void LoadMeetingDetails(string meetingId)
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlCommand cmd = new SqlCommand("GetMeetingDetails", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@MeetingId", meetingId);
+
+                conn.Open();
+                SqlDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    lblTitle.Text = reader["Title"].ToString();
+                    lblDateTime.Text = $"{Convert.ToDateTime(reader["StartDateTime"]):MM-dd-yyyy hh:mm tt} - {Convert.ToDateTime(reader["EndDateTime"]):MM-dd-yyyy hh:mm tt}";
+                }
+                else
+                {
+                    lblTitle.Text = "Meeting not found";
+                    lblDateTime.Text = "";
+                }
+            }
+        }
+    }
+}
+
+
+---
+
+✅ Now your page uses GetMeetingDetails stored procedure instead of inline SQL.
+This way, if you ever need to change the query, you only update it in the database, not the code.
+
+
+---
+
+Do you also want me to move your InsertAttendance procedure (from the previous code) into this same pattern so all your pages only use stored procedures (no hardcoded SQL at all)?
+
+---
+
+Got it ✅ You want a "View Attendees" button on the meetingattendance.aspx page — positioned on the right side of the meeting header.
+
+Here’s how you can update your markup:
+
+
+---
+
+🔹 meetingattendance.aspx (update the header area)
+
+Replace your <h1> and breadcrumb block with this:
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <h1 class="mb-0">
+        <asp:Label ID="lblTitle" runat="server" Text="Title"></asp:Label>
+    </h1>
+    <asp:Button ID="btnViewAttendees" runat="server" Text="View Attendees" 
+        CssClass="btn btn-sm btn-primary" OnClick="btnViewAttendees_Click" />
+</div>
+
+<ol class="breadcrumb mb-4 mt-3">
+    <li class="breadcrumb-item active">
+        <asp:Label ID="lblDateTime" runat="server" Text="Date / Time"></asp:Label>
+    </li>
+</ol>
+
+
+---
+
+🔹 meetingattendance.aspx.cs (code-behind)
+
+Add the event handler:
+
+protected void btnViewAttendees_Click(object sender, EventArgs e)
+{
+    string meetingId = Request.QueryString["meetingId"];
+    if (!string.IsNullOrEmpty(meetingId))
+    {
+        Response.Redirect($"ViewAttendees.aspx?meetingId={meetingId}");
+    }
+}
+
+
+---
+
+🔹 Flow
+
+Page shows Title (left) and View Attendees button (right) in the same row.
+
+When clicked → redirects to ViewAttendees.aspx?meetingId=123.
+
+You can build ViewAttendees.aspx later to show the list of employees who tapped in.
+
+
+
+---
+
+👉 Do you want me to also make a simple ViewAttendees.aspx page (GridView + Bootstrap table) that displays all attendees for the selected meeting?
+
+---
+
+Perfect 👍 let’s build ViewAttendees.aspx using the same GridView + Bootstrap DataTables style you used in meetinglist1.aspx.
+
+
+---
+
+🔹 ViewAttendees.aspx (markup)
+
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ViewAttendees.aspx.cs" Inherits="WebApplication1_MAL.ViewAttendees" %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head runat="server">
+    <meta charset="utf-8" />
+    <title>View Attendees</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
+
+</head>
+<body>
+    <form id="form1" runat="server">
+        <div class="container mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>Attendees</h2>
+                <asp:Button ID="btnBack" runat="server" Text="Back to Meeting" CssClass="btn btn-secondary btn-sm" OnClick="btnBack_Click" />
+            </div>
+
+            <!-- GridView -->
+            <asp:GridView ID="gvAttendees" runat="server" CssClass="table table-bordered table-striped"
+                AutoGenerateColumns="False" UseAccessibleHeader="true">
+                <Columns>
+                    <asp:TemplateField HeaderText="#">
+                        <ItemTemplate>
+                            <%# Container.DataItemIndex + 1 %>
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                    <asp:BoundField DataField="EmployeeId" HeaderText="Employee ID" />
+                    <asp:BoundField DataField="EmployeeName" HeaderText="Employee Name" />
+                    <asp:BoundField DataField="TapType" HeaderText="Tap Type" />
+                    <asp:BoundField DataField="TapTime" HeaderText="Tap Time" DataFormatString="{0:MM-dd-yyyy hh:mm tt}" />
+                </Columns>
+            </asp:GridView>
+
+            <asp:Label ID="lblMessage" runat="server" CssClass="text-danger fw-bold"></asp:Label>
+        </div>
+    </form>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- jQuery + DataTables -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            $('#<%= gvAttendees.ClientID %>').DataTable();
+        });
+    </script>
+</body>
+</html>
+
+
+---
+
+🔹 ViewAttendees.aspx.cs (code-behind)
+
+using System;
+using System.Configuration;
+using System.Data;
+using System.Data.SqlClient;
+
+namespace WebApplication1_MAL
+{
+    public partial class ViewAttendees : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+            {
+                string meetingId = Request.QueryString["meetingId"];
+                if (!string.IsNullOrEmpty(meetingId))
+                {
+                    LoadAttendees(meetingId);
+                }
+                else
+                {
+                    lblMessage.Text = "Invalid Meeting ID.";
+                }
+            }
+        }
+
+        private void LoadAttendees(string meetingId)
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlCommand cmd = new SqlCommand("GetMeetingAttendees", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@MeetingId", meetingId);
+
+                using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+                {
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+
+                    if (dt.Rows.Count > 0)
+                    {
+                        gvAttendees.DataSource = dt;
+                        gvAttendees.DataBind();
+                    }
+                    else
+                    {
+                        lblMessage.Text = "No attendees found for this meeting.";
+                        gvAttendees.DataSource = null;
+                        gvAttendees.DataBind();
+                    }
+                }
+            }
+        }
+
+        protected void btnBack_Click(object sender, EventArgs e)
+        {
+            string meetingId = Request.QueryString["meetingId"];
+            if (!string.IsNullOrEmpty(meetingId))
+            {
+                Response.Redirect($"meetingattendance.aspx?meetingId={meetingId}");
+            }
+            else
+            {
+                Response.Redirect("meetinglist1.aspx");
+            }
+        }
+    }
+}
+
+
+---
+
+🔹 SQL Stored Procedure
+
+Add this to your database:
+
+CREATE PROCEDURE GetMeetingAttendees
+    @MeetingId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        a.EmployeeId,
+        e.FullName AS EmployeeName,
+        a.TapType,
+        a.TapTime
+    FROM tbl_attendance a
+    INNER JOIN tbl_employee e ON a.EmployeeId = e.EmployeeId
+    WHERE a.MeetingId = @MeetingId
+    ORDER BY a.TapTime ASC;
+END
+
+
+---
+
+✅ Now when you click View Attendees from meetingattendance.aspx, it will show all tapped employees in a Bootstrap-styled DataTable.
+
+Do you also want me to add a status badge (Tap In / Tap Out with colors) inside the GridView like your meeting status badge?
+
+
