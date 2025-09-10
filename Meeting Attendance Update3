@@ -163,3 +163,174 @@
     <script src="Scripts2/datatables-simple-demo.js"></script>
 </body>
 </html>
+
+
+-- Code Behind
+
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Data;
+using System.Data.SqlClient;
+using System.Data.SqlTypes;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+namespace WebApplication1_MAL
+{
+    public partial class meetingattendance1 : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+            {
+                string meetingId = Request.QueryString["meetingId"];
+                if (!string.IsNullOrEmpty(meetingId))
+                {
+                    LoadMeetingDetails(meetingId);
+                }
+                else
+                {
+                    lblTitle.Text = "Invalid Meeting";
+                    lblDateTime.Text = "";
+                }
+            }
+        }
+
+        private void LoadMeetingDetails(string meetingId)
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlCommand cmd = new SqlCommand("MA_GetMeetingDetails", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@MeetingId", meetingId);
+
+                conn.Open();
+                SqlDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    lblTitle.Text = reader["Title"].ToString();
+                    //lblDateTime.Text = $"{Convert.ToDateTime(reader["StartDateTime"]):MM-dd-yyyy hh:mm tt} - {Convert.ToDateTime(reader["EndDateTime"]):MM-dd-yyyy hh:mm tt}";
+                    lblDateTime.Text = $"{reader["Venue"]} / {Convert.ToDateTime(reader["StartDateTime"]):MMMM dd, yyyy hh:mm tt} - {Convert.ToDateTime(reader["EndDateTime"]):hh:mm tt}";
+                    hfMeetingID.Value = meetingId;
+                }
+                else
+                {
+                    lblTitle.Text = "Meeting not found";
+                    lblDateTime.Text = "";
+                }
+            }
+        }
+
+        protected void btnViewAttendees_Click(object sender, EventArgs e)
+        {
+            string meetingId = hfMeetingID.Value; // assuming it's stored
+            Response.Redirect($"viewattendees.aspx?meetingId={meetingId}");
+        }
+
+
+
+
+
+
+ protected void txtCardSerial_TextChanged(object sender, EventArgs e)
+ {
+     string cardSerial = txtCardSerial.Text.Trim();
+     string meetingId = hfMeetingID.Value;
+
+     if (string.IsNullOrEmpty(cardSerial))
+     {
+         //ShowAlert("⚠ Please place your card on the reader.", "alert-warning");
+         //return;
+         ShowAlert("Invalid Tap", "Please place your card on the reader.", "", "alert-warning");
+         return;
+     }
+
+     string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+     using (SqlConnection conn = new SqlConnection(connStr))
+     {
+         conn.Open();
+
+         // 1. Validate Employee
+         string empName = "";
+         string dept = "";
+         string sec = "";
+
+         using (SqlCommand cmd = new SqlCommand("MA_CheckEmployeeByCard", conn))
+         {
+             cmd.CommandType = System.Data.CommandType.StoredProcedure;
+             cmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+             SqlDataReader reader = cmd.ExecuteReader();
+             if (!reader.Read())
+             {
+                 //ShowAlert("❌ Card not registered in the system.", "alert-danger");
+                 //return;
+                 ShowAlert("Card Not Registered", "Unknown Card", "", "alert-danger");
+                 return;
+             }
+
+             empName = reader["FirstName"].ToString();
+             dept = reader["LastName"].ToString();
+             sec = reader["FirstName"].ToString();
+             reader.Close();
+         }
+
+         // 2. Insert participant (with duplicate prevention)
+         using (SqlCommand insertCmd = new SqlCommand("MA_InsertAttendee", conn))
+         {
+             insertCmd.CommandType = System.Data.CommandType.StoredProcedure;
+             insertCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+             insertCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+             object result = insertCmd.ExecuteScalar();
+
+             if (result != null && result.ToString() == "0")
+             {
+                 //ShowAlert($"⚠ {empName} already tapped in for this meeting.", "alert-warning");
+                 ShowAlert("Already Tapped In", empName, $"{dept} - {sec}", "alert-warning");
+             }
+             else
+             {
+                 //ShowAlert($"✅ Successfully tapped in: {empName} ({dept} - {sec})", "alert-success");
+                 ShowAlert("You have tapped in successfully!", empName, $"{dept} - {sec}", "alert-success");
+             }
+         }
+
+         // Clear for next tap
+         txtCardSerial.Text = "";
+     }
+ }
+
+
+
+
+
+
+        private void ShowAlert(string heading, string fullName, string dept, string cssClass)
+        {
+            pnlAlert.Visible = true;
+            pnlAlert.CssClass = $"alert {cssClass} alert-dismissible fade show";
+
+            lblAlertHeading.Text = heading;
+            lblAlertName.Text = fullName;
+            lblAlertDept.Text = dept;
+            lblAlertDateTime.Text = DateTime.Now.ToString("MMMM dd, yyyy hh:mm tt");
+
+            // auto fade-out
+            ScriptManager.RegisterStartupScript(this, GetType(), "fadeOutAlert", "fadeOutAlert();", true);
+        }
+
+
+
+
+    }
+}
+
+
+
