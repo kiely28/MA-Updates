@@ -364,3 +364,69 @@ lblDateTime.Text = $"{reader["Venue"]} / {start:MMMM dd, yyyy hh:mm tt}" +
 Do you want me to **add the GridView with DataTables styling** for attendees inside this same page when you click "View Attendees"**, or should it redirect to a separate page (viewattendees.aspx`)?
 
 
+
+-- Update 12:34PM
+Got it 👍 — when you say “the button became in the bottom”, it sounds like instead of floating to the right of the radio buttons, they dropped below that whole row.
+
+Right now your markup is like this:
+
+<div class="row">
+    <div class="col-3"> … radio button 1 … </div>
+    <div class="col-3"> … radio button 2 … </div>
+    <div class="col-6 col-md-6 d-flex justify-content-end">
+        … your buttons …
+    </div>
+</div>
+
+That col-6 is forcing the buttons to behave like a separate block column.
+So instead of sharing the same line, they wrap downwards.
+
+
+---
+
+✅ Solution: Put radios + buttons in the same flex row
+
+Replace the whole .row with flexbox:
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <!-- Radios on the left -->
+    <div class="d-flex">
+        <div class="me-2">
+            <input type="radio" class="btn-check" name="options-outlined" id="success-outlined" autocomplete="off" checked>
+            <label class="btn btn-outline-primary btn-lg" for="success-outlined">In</label>
+        </div>
+        <div>
+            <input type="radio" class="btn-check" name="options-outlined" id="danger-outlined" autocomplete="off">
+            <label class="btn btn-outline-secondary btn-lg" for="danger-outlined">Out</label>
+        </div>
+    </div>
+
+    <!-- Buttons on the right -->
+    <div>
+        <asp:Button ID="btnViewAttendees" runat="server" Text="View Attendees"
+            CssClass="btn btn-info me-2 w-auto" OnClick="btnViewAttendees_Click" />
+        <asp:Button ID="btnEndMeeting" runat="server" Text="End Meeting"
+            CssClass="btn btn-danger w-auto" OnClick="btnEndMeeting_Click" />
+    </div>
+</div>
+
+
+---
+
+🔑 Explanation
+
+d-flex justify-content-between → puts radios on the left and buttons on the right, same line.
+
+align-items-center → vertically centers them.
+
+Removed the grid col-* since it was forcing wrapping.
+
+Added me-2 for spacing between radios/buttons.
+
+
+
+---
+
+👉 Do you want the buttons to shrink naturally (just enough for their text), or should they have a fixed equal width like your “In/Out” radio buttons?
+
+
