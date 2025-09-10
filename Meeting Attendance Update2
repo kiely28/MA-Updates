@@ -1,3 +1,5 @@
+
+
 <%@ Page Language="C#" AutoEventWireup="true" CodeBehind="meetingattendance.aspx.cs" Inherits="WebApplication1_MAL.meetingattendance1" %>
 
 <!DOCTYPE html>
@@ -428,5 +430,248 @@ Added me-2 for spacing between radios/buttons.
 ---
 
 👉 Do you want the buttons to shrink naturally (just enough for their text), or should they have a fixed equal width like your “In/Out” radio buttons?
+
+
+-- Update 12:58
+Yes ✅ absolutely possible!
+You don’t need a Tap button — you can trigger the check when the user presses Enter in the textbox (or when the card reader sends the Enter key after writing the card serial).
+
+
+---
+
+🔑 How to do it
+
+1. Use AutoPostBack="true" on your TextBox.
+
+
+2. Handle the TextChanged event in your code-behind.
+
+
+
+
+---
+
+ASPX
+
+<div class="mb-3">
+    <asp:TextBox ID="txtCardSerial" runat="server" CssClass="form-control custom-input" 
+        placeholder="Place your ID card on the reader"
+        AutoPostBack="true" OnTextChanged="txtCardSerial_TextChanged"></asp:TextBox>
+</div>
+
+
+---
+
+Code-behind (C#)
+
+protected void txtCardSerial_TextChanged(object sender, EventArgs e)
+{
+    string cardSerial = txtCardSerial.Text.Trim();
+    string meetingId = hfMeetingID.Value;
+
+    if (string.IsNullOrEmpty(cardSerial))
+    {
+        ShowAlert("⚠ Please place your card on the reader.", "alert-warning");
+        return;
+    }
+
+    string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+    using (SqlConnection conn = new SqlConnection(connStr))
+    {
+        conn.Open();
+
+        // 1. Check if employee exists
+        string checkEmployee = "SELECT EmpName, Dept, Sec FROM tbl_employee WHERE CardSerialNo = @CardSerialNo";
+        using (SqlCommand cmd = new SqlCommand(checkEmployee, conn))
+        {
+            cmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+            SqlDataReader reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+            {
+                ShowAlert("❌ Card not registered in the system.", "alert-danger");
+                return;
+            }
+
+            string empName = reader["EmpName"].ToString();
+            string dept = reader["Dept"].ToString();
+            string sec = reader["Sec"].ToString();
+            reader.Close();
+
+            // 2. Insert into tbl_participant
+            string insertParticipant = @"
+                INSERT INTO tbl_participant (MeetingId, CardSerialNo, TimeIn)
+                VALUES (@MeetingId, @CardSerialNo, GETDATE())";
+
+            using (SqlCommand insertCmd = new SqlCommand(insertParticipant, conn))
+            {
+                insertCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+                insertCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+                insertCmd.ExecuteNonQuery();
+            }
+
+            // 3. Show success alert
+            ShowAlert($"✅ Successfully tapped in: {empName} ({dept} - {sec})", "alert-success");
+
+            // Clear textbox for next scan
+            txtCardSerial.Text = "";
+        }
+    }
+}
+
+private void ShowAlert(string message, string cssClass)
+{
+    pnlAlert.CssClass = $"alert {cssClass} alert-dismissible fade show";
+    lblMessage.Text = message;
+    pnlAlert.Visible = true;
+    ScriptManager.RegisterStartupScript(this, this.GetType(), "fadeOut", "fadeOutAlert();", true);
+}
+
+
+---
+
+🔑 Key Points
+
+AutoPostBack="true" → makes the textbox fire a postback when Enter is pressed.
+
+OnTextChanged="txtCardSerial_TextChanged" → executes logic without needing a button.
+
+After success, txtCardSerial.Text = "" clears the box for the next tap.
+
+
+
+---
+
+👉 Do you also want me to include duplicate prevention (so the same card can’t tap in multiple times for the same meeting)?
+
+-- Update again 12:58
+
+Perfect 👍 yes, converting the inline SQL queries to stored procedures is best practice (cleaner, safer, and easier to maintain).
+
+Right now you have two SQL operations:
+
+1. Check if card exists in tbl_employee.
+
+
+2. Insert participant record into tbl_participant.
+
+
+
+
+---
+
+✅ Stored Procedures
+
+1. Check Employee by CardSerialNo
+
+CREATE PROCEDURE sp_CheckEmployeeByCard
+    @CardSerialNo NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT EmpName, Dept, Sec
+    FROM tbl_employee
+    WHERE CardSerialNo = @CardSerialNo;
+END
+GO
+
+
+---
+
+2. Insert Participant Tap-In
+
+CREATE PROCEDURE sp_InsertParticipant
+    @MeetingId INT,
+    @CardSerialNo NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO tbl_participant (MeetingId, CardSerialNo, TimeIn)
+    VALUES (@MeetingId, @CardSerialNo, GETDATE());
+END
+GO
+
+
+---
+
+✅ Code-behind (using stored procs)
+
+protected void txtCardSerial_TextChanged(object sender, EventArgs e)
+{
+    string cardSerial = txtCardSerial.Text.Trim();
+    string meetingId = hfMeetingID.Value;
+
+    if (string.IsNullOrEmpty(cardSerial))
+    {
+        ShowAlert("⚠ Please place your card on the reader.", "alert-warning");
+        return;
+    }
+
+    string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+    using (SqlConnection conn = new SqlConnection(connStr))
+    {
+        conn.Open();
+
+        // 1. Call sp_CheckEmployeeByCard
+        string empName = "";
+        string dept = "";
+        string sec = "";
+
+        using (SqlCommand cmd = new SqlCommand("sp_CheckEmployeeByCard", conn))
+        {
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+            SqlDataReader reader = cmd.ExecuteReader();
+            if (!reader.Read())
+            {
+                ShowAlert("❌ Card not registered in the system.", "alert-danger");
+                return;
+            }
+
+            empName = reader["EmpName"].ToString();
+            dept = reader["Dept"].ToString();
+            sec = reader["Sec"].ToString();
+            reader.Close();
+        }
+
+        // 2. Insert into tbl_participant using sp_InsertParticipant
+        using (SqlCommand insertCmd = new SqlCommand("sp_InsertParticipant", conn))
+        {
+            insertCmd.CommandType = CommandType.StoredProcedure;
+            insertCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+            insertCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+            insertCmd.ExecuteNonQuery();
+        }
+
+        // 3. Success alert
+        ShowAlert($"✅ Successfully tapped in: {empName} ({dept} - {sec})", "alert-success");
+
+        // Clear for next tap
+        txtCardSerial.Text = "";
+    }
+}
+
+
+---
+
+🔑 Benefits of Stored Procs
+
+Easy to update logic without touching your C# code.
+
+More secure (parameterized queries prevent SQL injection).
+
+Performance boost (SQL Server caches execution plans).
+
+
+
+---
+
+👉 Do you want me to also add duplicate prevention in the stored procedure (so the same card can’t insert twice for the same meeting), or should I keep it as-is?
+
 
 
