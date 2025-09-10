@@ -674,4 +674,269 @@ Performance boost (SQL Server caches execution plans).
 👉 Do you want me to also add duplicate prevention in the stored procedure (so the same card can’t insert twice for the same meeting), or should I keep it as-is?
 
 
+-- Update 03:27
+Perfect 👍 I’ll give you the full working version with Bootstrap alerts included.
+This combines your ASPX page, code-behind, and the stored procedures we wrote earlier.
+
+
+---
+
+✅ Stored Procedures (SQL Server)
+
+-- 1. Check Employee
+CREATE PROCEDURE sp_CheckEmployeeByCard
+    @CardSerialNo NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT EmpName, Dept, Sec
+    FROM tbl_employee
+    WHERE CardSerialNo = @CardSerialNo;
+END
+GO
+
+-- 2. Insert Participant with Duplicate Prevention
+CREATE PROCEDURE sp_InsertParticipant
+    @MeetingId INT,
+    @CardSerialNo NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Prevent duplicate tap-in
+    IF EXISTS (
+        SELECT 1 FROM tbl_participant
+        WHERE MeetingId = @MeetingId
+          AND CardSerialNo = @CardSerialNo
+    )
+    BEGIN
+        SELECT 0 AS Result; -- Already tapped in
+        RETURN;
+    END
+
+    -- Insert new record
+    INSERT INTO tbl_participant (MeetingId, CardSerialNo, TimeIn)
+    VALUES (@MeetingId, @CardSerialNo, GETDATE());
+
+    SELECT 1 AS Result; -- Success
+END
+GO
+
+
+---
+
+✅ ASPX Page (meetingattendance.aspx)
+
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="meetingattendance.aspx.cs" Inherits="WebApplication1_MAL.meetingattendance1" %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Meeting Attendance Tapping</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+    <form id="form1" runat="server">
+        <div class="container mt-4">
+
+            <!-- Meeting Info -->
+            <h3><asp:Label ID="lblTitle" runat="server" Text="Meeting Title"></asp:Label></h3>
+            <p><asp:Label ID="lblDateTime" runat="server" Text="Date/Time"></asp:Label></p>
+            <asp:HiddenField ID="hfMeetingID" runat="server" />
+
+            <!-- Tap Input -->
+            <div class="mb-3">
+                <asp:TextBox ID="txtCardSerial" runat="server" 
+                    CssClass="form-control form-control-lg" 
+                    placeholder="Tap your ID card"
+                    AutoPostBack="true"
+                    OnTextChanged="txtCardSerial_TextChanged"></asp:TextBox>
+            </div>
+
+            <!-- Bootstrap Alert -->
+            <div class="mt-3">
+                <asp:Panel ID="pnlAlert" runat="server" Visible="false"
+                    CssClass="alert alert-dismissible fade show" role="alert">
+                    <asp:Label ID="lblMessage" runat="server"></asp:Label>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </asp:Panel>
+            </div>
+        </div>
+    </form>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Auto fade-out -->
+    <script type="text/javascript">
+        function fadeOutAlert() {
+            var alertBox = document.getElementById('<%= pnlAlert.ClientID %>');
+            if (alertBox && alertBox.style.display !== "none") {
+                setTimeout(function () {
+                    var bsAlert = new bootstrap.Alert(alertBox);
+                    bsAlert.close();
+                }, 3000); // disappear after 3s
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+---
+
+✅ Code-behind (meetingattendance.aspx.cs)
+
+using System;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.Web.UI;
+
+namespace WebApplication1_MAL
+{
+    public partial class meetingattendance1 : Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+            {
+                string meetingId = Request.QueryString["meetingId"];
+                if (!string.IsNullOrEmpty(meetingId))
+                {
+                    hfMeetingID.Value = meetingId;
+                    LoadMeetingDetails(meetingId);
+                }
+                else
+                {
+                    lblTitle.Text = "Invalid Meeting";
+                    lblDateTime.Text = "";
+                }
+            }
+        }
+
+        private void LoadMeetingDetails(string meetingId)
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlCommand cmd = new SqlCommand("MA_GetMeetingDetails", conn))
+            {
+                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@MeetingId", meetingId);
+
+                conn.Open();
+                SqlDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    lblTitle.Text = reader["Title"].ToString();
+                    lblDateTime.Text = $"{reader["Venue"]} / {Convert.ToDateTime(reader["StartDateTime"]):MMMM dd, yyyy hh:mm tt} - {Convert.ToDateTime(reader["EndDateTime"]):hh:mm tt}";
+                }
+                else
+                {
+                    lblTitle.Text = "Meeting not found";
+                    lblDateTime.Text = "";
+                }
+            }
+        }
+
+        protected void txtCardSerial_TextChanged(object sender, EventArgs e)
+        {
+            string cardSerial = txtCardSerial.Text.Trim();
+            string meetingId = hfMeetingID.Value;
+
+            if (string.IsNullOrEmpty(cardSerial))
+            {
+                ShowAlert("⚠ Please place your card on the reader.", "alert-warning");
+                return;
+            }
+
+            string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+
+                // 1. Validate Employee
+                string empName = "";
+                string dept = "";
+                string sec = "";
+
+                using (SqlCommand cmd = new SqlCommand("sp_CheckEmployeeByCard", conn))
+                {
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    if (!reader.Read())
+                    {
+                        ShowAlert("❌ Card not registered in the system.", "alert-danger");
+                        return;
+                    }
+
+                    empName = reader["EmpName"].ToString();
+                    dept = reader["Dept"].ToString();
+                    sec = reader["Sec"].ToString();
+                    reader.Close();
+                }
+
+                // 2. Insert participant (with duplicate prevention)
+                using (SqlCommand insertCmd = new SqlCommand("sp_InsertParticipant", conn))
+                {
+                    insertCmd.CommandType = System.Data.CommandType.StoredProcedure;
+                    insertCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+                    insertCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+                    object result = insertCmd.ExecuteScalar();
+
+                    if (result != null && result.ToString() == "0")
+                    {
+                        ShowAlert($"⚠ {empName} already tapped in for this meeting.", "alert-warning");
+                    }
+                    else
+                    {
+                        ShowAlert($"✅ Successfully tapped in: {empName} ({dept} - {sec})", "alert-success");
+                    }
+                }
+
+                // Clear for next tap
+                txtCardSerial.Text = "";
+            }
+        }
+
+        private void ShowAlert(string message, string cssClass)
+        {
+            pnlAlert.Visible = true;
+            pnlAlert.CssClass = $"alert {cssClass} alert-dismissible fade show";
+            lblMessage.Text = message;
+
+            // trigger fade-out
+            ScriptManager.RegisterStartupScript(this, GetType(), "fadeOutAlert", "fadeOutAlert();", true);
+        }
+    }
+}
+
+
+---
+
+✅ Now:
+
+Tapping card (Enter in textbox) checks employee.
+
+If found → tries to insert participant.
+
+If duplicate → shows yellow warning alert.
+
+If success → shows green success alert.
+
+If invalid → shows red danger alert.
+
+Alerts auto-hide after 3 seconds.
+
+
+
+---
+
+Do you also want me to add a Tap-Out function (updates TimeOut instead of re-inserting), or should we keep it Tap-In only for now?
+
 
