@@ -939,4 +939,11 @@ Alerts auto-hide after 3 seconds.
 
 Do you also want me to add a Tap-Out function (updates TimeOut instead of re-inserting), or should we keep it Tap-In only for now?
 
-
+-- Setings
+<div class="alert alert-success" role="alert">
+  <h4 class="alert-heading">You have tapped in successfully!</h4>
+  <p><FullName></p>
+  <p><Dept></p>
+  <hr>
+  <p class="mb-0"><Current Date & Time></p>
+</div>
