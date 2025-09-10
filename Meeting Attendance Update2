@@ -947,3 +947,86 @@ Do you also want me to add a Tap-Out function (updates TimeOut instead of re-ins
   <hr>
   <p class="mb-0"><Current Date & Time></p>
 </div>
+
+Got it 👍 you want the alert to still use ASP.NET server controls (ASPX) rather than injecting raw HTML.
+We can structure the Bootstrap alert markup directly in ASPX with <asp:Label> placeholders that your code-behind will fill.
+
+
+---
+
+✅ ASPX Markup
+
+<div class="mt-3">
+    <asp:Panel ID="pnlAlert" runat="server" Visible="false"
+        CssClass="alert alert-dismissible fade show" role="alert">
+
+        <h4 class="alert-heading">
+            <asp:Label ID="lblAlertHeading" runat="server"></asp:Label>
+        </h4>
+
+        <p><asp:Label ID="lblAlertName" runat="server"></asp:Label></p>
+        <p><asp:Label ID="lblAlertDept" runat="server"></asp:Label></p>
+
+        <hr />
+
+        <p class="mb-0">
+            <asp:Label ID="lblAlertDateTime" runat="server"></asp:Label>
+        </p>
+
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </asp:Panel>
+</div>
+
+
+---
+
+✅ Code-behind (meetingattendance.aspx.cs)
+
+private void ShowAlert(string heading, string fullName, string dept, string cssClass)
+{
+    pnlAlert.Visible = true;
+    pnlAlert.CssClass = $"alert {cssClass} alert-dismissible fade show";
+
+    lblAlertHeading.Text = heading;
+    lblAlertName.Text = fullName;
+    lblAlertDept.Text = dept;
+    lblAlertDateTime.Text = DateTime.Now.ToString("MMMM dd, yyyy hh:mm tt");
+
+    // auto fade-out
+    ScriptManager.RegisterStartupScript(this, GetType(), "fadeOutAlert", "fadeOutAlert();", true);
+}
+
+
+---
+
+✅ Usage Examples
+
+if (string.IsNullOrEmpty(cardSerial))
+{
+    ShowAlert("⚠ Invalid Tap", "Please place your card on the reader.", "", "alert-warning");
+    return;
+}
+
+if (!reader.Read())
+{
+    ShowAlert("❌ Card Not Registered", "Unknown Card", "", "alert-danger");
+    return;
+}
+
+if (result != null && result.ToString() == "0")
+{
+    ShowAlert("⚠ Already Tapped In", empName, $"{dept} - {sec}", "alert-warning");
+}
+else
+{
+    ShowAlert("✅ You have tapped in successfully!", empName, $"{dept} - {sec}", "alert-success");
+}
+
+
+---
+
+✅ This way everything is pure ASPX + C# controls. No raw HTML injection — Bootstrap styling is applied via CssClass.
+
+Do you want me to also add a different heading & color for Tap-Out (so the same structure can show “Tapped out successfully”)?
+
+
