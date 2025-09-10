@@ -214,3 +214,153 @@ namespace WebApplication1_MAL
         }
     }
 }
+
+
+Update 11:11AM
+Thanks for sharing your full code 👍 I’ve reviewed both your ASPX page and the code-behind, here are my findings and recommendations:
+
+
+---
+
+✅ Things that look good
+
+Bootstrap 5 integration is correct (you’re using CDN + your local scripts).
+
+ASP.NET Web Forms controls (Label, TextBox, Button, HiddenField, Panel) are properly declared with runat="server".
+
+Stored Procedure call (MA_GetMeetingDetails) is implemented properly with parameter binding and reader handling.
+
+IsPostBack logic is correct: only loading details once when the page first loads.
+
+
+
+---
+
+⚠️ Issues & Improvements
+
+1. Wrong event handler for View Attendees
+
+<asp:Button ID="btnViewAttendees" runat="server" Text="View Attendees"
+    CssClass="btn btn-info" OnClick="btnEndMeeting_Click" />
+
+👉 This button is wired to the End Meeting handler.
+✅ Fix: create a separate event in code-behind:
+
+protected void btnViewAttendees_Click(object sender, EventArgs e)
+{
+    string meetingId = hfMeetingID.Value; // assuming it's stored
+    Response.Redirect($"viewattendees.aspx?meetingId={meetingId}");
+}
+
+And update your ASPX:
+
+<asp:Button ID="btnViewAttendees" runat="server" Text="View Attendees"
+    CssClass="btn btn-info" OnClick="btnViewAttendees_Click" />
+
+
+---
+
+2. hfMeetingID is never assigned
+
+You declare:
+
+<asp:HiddenField ID="hfMeetingID" runat="server" />
+
+But in code-behind, it’s not being set after loading details.
+✅ Add inside LoadMeetingDetails:
+
+hfMeetingID.Value = meetingId;
+
+
+---
+
+3. Handling missing/invalid meetingId
+
+Currently:
+
+if (!string.IsNullOrEmpty(meetingId))
+{
+    LoadMeetingDetails(meetingId);
+}
+else
+{
+    lblTitle.Text = "Invalid Meeting";
+    lblDateTime.Text = "";
+}
+
+If meetingId is invalid (not found in DB), you only update labels.
+
+Consider redirecting back to meeting list with an alert or message.
+
+
+
+---
+
+4. SQL Connection handling
+
+You’re using using (...) which is good.
+But SqlDataReader isn’t disposed.
+✅ Wrap in using:
+
+using (SqlDataReader reader = cmd.ExecuteReader())
+{
+    if (reader.Read())
+    {
+        // assign labels...
+    }
+}
+
+
+---
+
+5. UI alignment
+
+Two buttons (View Attendees, End Meeting) are in the same row but not spaced.
+✅ Suggest adding margin:
+
+
+<asp:Button ID="btnViewAttendees" runat="server" Text="View Attendees"
+    CssClass="btn btn-info me-2" OnClick="btnViewAttendees_Click" />
+
+
+---
+
+6. Potential null values in DB
+
+If EndDateTime is NULL, Convert.ToDateTime(reader["EndDateTime"]) will throw an exception.
+✅ Check before converting:
+
+DateTime start = Convert.ToDateTime(reader["StartDateTime"]);
+DateTime? end = reader["EndDateTime"] != DBNull.Value ? 
+                 Convert.ToDateTime(reader["EndDateTime"]) : (DateTime?)null;
+
+lblDateTime.Text = $"{reader["Venue"]} / {start:MMMM dd, yyyy hh:mm tt}" + 
+                   (end.HasValue ? $" - {end:hh:mm tt}" : "");
+
+
+---
+
+🔑 Summary of Changes Needed
+
+1. Create a separate handler for View Attendees button.
+
+
+2. Assign hfMeetingID.Value when loading details.
+
+
+3. Wrap SqlDataReader in using.
+
+
+4. Add null-handling for EndDateTime.
+
+
+5. Improve UI spacing between buttons.
+
+
+
+
+---
+
+Do you want me to **add the GridView with DataTables styling** for attendees inside this same page when you click "View Attendees"**, or should it redirect to a separate page (viewattendees.aspx`)?
+
+
