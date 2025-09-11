@@ -355,3 +355,71 @@ Tap-Out → Updates TimeOut of the existing record (no duplicate inserts).
 Do you want me to also prevent multiple Tap-Outs (so they can’t tap out twice in the same meeting), or should it just silently update TimeOut every time?
 
 
+-- 12:45
+Got it 👍 — I see why your radio buttons aren’t behaving:
+
+You used Bootstrap’s btn-check style with plain <input type="radio">, but then in code-behind you tried to check radioIn.Checked.
+
+That works only if the radio is an ASP.NET RadioButton server control.
+
+Right now, your markup has a mismatch: input is HTML, but your code expects <asp:RadioButton>.
+
+
+
+---
+
+✅ Fix: Use ASP.NET RadioButton with Bootstrap Styling
+
+Here’s how to wire it correctly:
+
+<div class="col-3 col-lg-3 mb-3">
+    <asp:RadioButton ID="radioIn" runat="server" GroupName="TapMode" Checked="true"
+        CssClass="btn-check" />
+    <label class="btn btn-outline-primary w-100 btn-lg" for="radioIn">In</label>
+</div>
+
+<div class="col-3 col-lg-3 mb-3">
+    <asp:RadioButton ID="radioOut" runat="server" GroupName="TapMode"
+        CssClass="btn-check" />
+    <label class="btn btn-outline-secondary w-100 btn-lg" for="radioOut">Out</label>
+</div>
+
+
+---
+
+🔎 Why this works
+
+<asp:RadioButton> renders to <input type="radio"> with an auto-generated ID.
+
+The for="radioIn" on the <label> won’t match unless you explicitly set the client-side id.
+
+ASP.NET allows this by adding ClientIDMode="Static".
+
+
+So update it like this:
+
+<asp:RadioButton ID="radioIn" runat="server" GroupName="TapMode" Checked="true"
+    CssClass="btn-check" ClientIDMode="Static" />
+<label class="btn btn-outline-primary w-100 btn-lg" for="radioIn">In</label>
+
+<asp:RadioButton ID="radioOut" runat="server" GroupName="TapMode"
+    CssClass="btn-check" ClientIDMode="Static" />
+<label class="btn btn-outline-secondary w-100 btn-lg" for="radioOut">Out</label>
+
+Now:
+
+Bootstrap styling works (btn-check).
+
+Labels toggle correctly.
+
+In C#, you can reliably check:
+
+if (radioIn.Checked) { ... } 
+else if (radioOut.Checked) { ... }
+
+
+
+---
+
+⚡ Question for you: Do you want the default mode always set to Tap-In every time the page reloads, or should it remember the last selection (even after postback)?
+
