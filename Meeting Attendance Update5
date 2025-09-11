@@ -423,3 +423,176 @@ else if (radioOut.Checked) { ... }
 
 ⚡ Question for you: Do you want the default mode always set to Tap-In every time the page reloads, or should it remember the last selection (even after postback)?
 
+
+-- 01:09
+Alright 👍 let’s fully integrate the Bootstrap radio toggle + hidden field into your code.
+
+
+---
+
+✅ Markup (meetingattendance.aspx)
+
+Replace your current radio buttons section with this:
+
+<div class="row">
+    <div class="col-3 col-lg-3 mb-3">
+        <input type="radio" class="btn-check" name="tapMode" id="radioIn" value="In" autocomplete="off" checked>
+        <label class="btn btn-outline-primary w-100 btn-lg" for="radioIn">In</label>
+    </div>
+    <div class="col-3 col-lg-3 mb-3">
+        <input type="radio" class="btn-check" name="tapMode" id="radioOut" value="Out" autocomplete="off">
+        <label class="btn btn-outline-secondary w-100 btn-lg" for="radioOut">Out</label>
+    </div>
+    <div class="col-6 d-flex justify-content-end">
+        <div>
+            <asp:Button ID="btnViewAttendees" runat="server" CssClass="btn btn-info text-white me-2 w-auto"
+                Text="View Attendees" OnClick="btnViewAttendees_Click" />
+            <asp:Button ID="btnEndMeeting" runat="server" CssClass="btn btn-danger w-auto"
+                Text="End Meeting" OnClick="btnEndMeeting_Click" />
+        </div>
+    </div>
+</div>
+
+<!-- Hidden field to hold selected mode -->
+<asp:HiddenField ID="hfTapMode" runat="server" />
+
+And below it (inside the same page, after the form), add:
+
+<script type="text/javascript">
+    document.querySelectorAll('input[name="tapMode"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            document.getElementById('<%= hfTapMode.ClientID %>').value = this.value;
+        });
+    });
+
+    // Initialize default (In) on page load
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById('<%= hfTapMode.ClientID %>').value = "In";
+    });
+</script>
+
+
+---
+
+✅ Code-behind (meetingattendance.aspx.cs)
+
+Now update your txtCardSerial_TextChanged method like this:
+
+protected void txtCardSerial_TextChanged(object sender, EventArgs e)
+{
+    string cardSerial = txtCardSerial.Text.Trim();
+    string meetingId = hfMeetingID.Value;
+    string tapMode = hfTapMode.Value; // "In" or "Out"
+
+    if (string.IsNullOrEmpty(cardSerial))
+    {
+        ShowAlert("Invalid Tap", "Please place your card on the reader.", "", "alert-warning");
+        return;
+    }
+
+    string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+    using (SqlConnection conn = new SqlConnection(connStr))
+    {
+        conn.Open();
+
+        // 1. Validate Employee
+        string empName = "";
+        string dept = "";
+        string sec = "";
+
+        using (SqlCommand cmd = new SqlCommand("MA_CheckEmployeeByCard", conn))
+        {
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+            SqlDataReader reader = cmd.ExecuteReader();
+            if (!reader.Read())
+            {
+                ShowAlert("Card Not Registered", "Unknown Card", "", "alert-danger");
+                return;
+            }
+
+            empName = reader["FirstName"].ToString() + " " + reader["LastName"].ToString();
+            dept = reader["Department"].ToString();
+            sec = reader["Section"].ToString();
+            reader.Close();
+        }
+
+        // 2. Tap-In or Tap-Out
+        if (tapMode == "In")
+        {
+            using (SqlCommand insertCmd = new SqlCommand("MA_InsertAttendee", conn))
+            {
+                insertCmd.CommandType = CommandType.StoredProcedure;
+                insertCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+                insertCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+                object result = insertCmd.ExecuteScalar();
+
+                if (result != null && result.ToString() == "0")
+                {
+                    ShowAlert("Already Tapped In", empName, $"{dept} - {sec}", "alert-warning");
+                }
+                else
+                {
+                    ShowAlert("You have tapped in successfully!", empName, $"{dept} - {sec}", "alert-success");
+                }
+            }
+        }
+        else if (tapMode == "Out")
+        {
+            using (SqlCommand updateCmd = new SqlCommand("MA_UpdateAttendeeTimeout", conn))
+            {
+                updateCmd.CommandType = CommandType.StoredProcedure;
+                updateCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+                updateCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+                object result = updateCmd.ExecuteScalar();
+                int rows = (result != null) ? Convert.ToInt32(result) : 0;
+
+                if (rows > 0)
+                {
+                    ShowAlert("You have tapped out successfully!", empName, $"{dept} - {sec}", "alert-info");
+                }
+                else
+                {
+                    ShowAlert("Already tapped out or no tap-in found", empName, $"{dept} - {sec}", "alert-warning");
+                }
+            }
+        }
+
+        // 3. Reset for next tap
+        txtCardSerial.Text = "";
+        ScriptManager.RegisterStartupScript(this, GetType(), "setFocus",
+            $"document.getElementById('{txtCardSerial.ClientID}').focus();", true);
+    }
+}
+
+
+---
+
+✅ Flow Now
+
+1. User selects In or Out (Bootstrap toggle).
+
+
+2. JavaScript updates the hidden field hfTapMode.
+
+
+3. When ID is tapped → server reads hfTapMode.Value.
+
+
+4. Runs either Insert (Tap-In) or Update (Tap-Out, one time only).
+
+
+5. Shows the correct Bootstrap alert.
+
+
+
+
+---
+
+Would you like me to also update your ShowAlert so that it uses different alert colors/icons automatically depending on tap mode (In/Out) instead of passing them manually?
+
+
