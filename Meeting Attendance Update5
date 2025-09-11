@@ -596,3 +596,293 @@ protected void txtCardSerial_TextChanged(object sender, EventArgs e)
 Would you like me to also update your ShowAlert so that it uses different alert colors/icons automatically depending on tap mode (In/Out) instead of passing them manually?
 
 
+
+-- Update 02:35
+Perfect 👍 let me give you the complete working version (ASPX + CodeBehind) with:
+
+Bootstrap-styled toggle buttons (Tap In / Tap Out)
+
+Hidden field integration (hfTapMode)
+
+Tap-In inserts, Tap-Out updates (with duplicate prevention)
+
+Alerts that only show date/time for success, not for invalid/already tapped
+
+
+
+---
+
+✅ meetingattendance.aspx
+
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="meetingattendance.aspx.cs" Inherits="WebApplication1_MAL.meetingattendance1" %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head runat="server">
+    <meta charset="utf-8" />
+    <title>Meeting Attendance Tapping</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <style>
+        .custom-input {
+            font-size: 2rem;
+            padding: 1rem 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <form id="form1" runat="server">
+        <div class="container mt-4">
+            <h2>
+                <asp:Label ID="lblTitle" runat="server" Text="Title"></asp:Label>
+            </h2>
+            <p>
+                <asp:Label ID="lblDateTime" runat="server" Text="Date / Time"></asp:Label>
+            </p>
+
+            <!-- Hidden Meeting ID -->
+            <asp:HiddenField ID="hfMeetingID" runat="server" />
+
+            <!-- Hidden Tap Mode -->
+            <asp:HiddenField ID="hfTapMode" runat="server" Value="In" />
+
+            <div class="row mb-3">
+                <div class="col-3">
+                    <input type="radio" class="btn-check" name="tapMode" id="radioIn" value="In" autocomplete="off" checked
+                           onchange="document.getElementById('<%= hfTapMode.ClientID %>').value=this.value;" />
+                    <label class="btn btn-outline-primary w-100 btn-lg" for="radioIn">Tap In</label>
+                </div>
+                <div class="col-3">
+                    <input type="radio" class="btn-check" name="tapMode" id="radioOut" value="Out" autocomplete="off"
+                           onchange="document.getElementById('<%= hfTapMode.ClientID %>').value=this.value;" />
+                    <label class="btn btn-outline-secondary w-100 btn-lg" for="radioOut">Tap Out</label>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <asp:TextBox ID="txtCardSerial" runat="server" CssClass="form-control custom-input"
+                    placeholder="Place your ID card on the reader"
+                    AutoPostBack="true" OnTextChanged="txtCardSerial_TextChanged"></asp:TextBox>
+            </div>
+
+            <div id="alertPlaceholder" runat="server"></div>
+        </div>
+    </form>
+
+    <!-- Bootstrap Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+
+---
+
+✅ meetingattendance.aspx.cs
+
+using System;
+using System.Configuration;
+using System.Data;
+using System.Data.SqlClient;
+using System.Web.UI;
+
+namespace WebApplication1_MAL
+{
+    public partial class meetingattendance1 : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+            {
+                string meetingId = Request.QueryString["meetingId"];
+                if (!string.IsNullOrEmpty(meetingId))
+                {
+                    LoadMeetingDetails(meetingId);
+                }
+                else
+                {
+                    lblTitle.Text = "Invalid Meeting";
+                    lblDateTime.Text = "";
+                }
+            }
+        }
+
+        private void LoadMeetingDetails(string meetingId)
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlCommand cmd = new SqlCommand("MA_GetMeetingDetails", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@MeetingId", meetingId);
+
+                conn.Open();
+                SqlDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    lblTitle.Text = reader["Title"].ToString();
+                    lblDateTime.Text = $"{reader["Venue"]} / {Convert.ToDateTime(reader["StartDateTime"]):MMMM dd, yyyy hh:mm tt} - {Convert.ToDateTime(reader["EndDateTime"]):hh:mm tt}";
+                    hfMeetingID.Value = meetingId;
+                }
+                else
+                {
+                    lblTitle.Text = "Meeting not found";
+                    lblDateTime.Text = "";
+                }
+            }
+        }
+
+        protected void txtCardSerial_TextChanged(object sender, EventArgs e)
+        {
+            string cardSerial = txtCardSerial.Text.Trim();
+            string meetingId = hfMeetingID.Value;
+            string tapMode = hfTapMode.Value; // "In" or "Out"
+
+            if (string.IsNullOrEmpty(cardSerial))
+            {
+                ShowAlert("Invalid Tap", "Please place your card on the reader.", "", "In", "error");
+                return;
+            }
+
+            string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+            using (SqlConnection conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+
+                // 1. Validate Employee
+                string empName = "";
+                string dept = "";
+                string sec = "";
+
+                using (SqlCommand cmd = new SqlCommand("MA_CheckEmployeeByCard", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    if (!reader.Read())
+                    {
+                        ShowAlert("Card Not Registered", "Unknown Card", "", tapMode, "error");
+                        return;
+                    }
+
+                    empName = reader["FirstName"].ToString();
+                    dept = reader["LastName"].ToString();
+                    sec = reader["FirstName"].ToString();
+                    reader.Close();
+                }
+
+                if (tapMode == "In")
+                {
+                    // Insert participant (prevent duplicate tap-in)
+                    using (SqlCommand insertCmd = new SqlCommand("MA_InsertAttendee", conn))
+                    {
+                        insertCmd.CommandType = CommandType.StoredProcedure;
+                        insertCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+                        insertCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+                        object result = insertCmd.ExecuteScalar();
+
+                        if (result != null && result.ToString() == "0")
+                        {
+                            ShowAlert("Already Tapped In", empName, $"{dept} - {sec}", "In", "warning");
+                        }
+                        else
+                        {
+                            ShowAlert("You have tapped in successfully!", empName, $"{dept} - {sec}", "In", "success");
+                        }
+                    }
+                }
+                else if (tapMode == "Out")
+                {
+                    // Update TimeOut (prevent multiple tap-outs)
+                    using (SqlCommand updateCmd = new SqlCommand("MA_UpdateAttendeeTimeout", conn))
+                    {
+                        updateCmd.CommandType = CommandType.StoredProcedure;
+                        updateCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+                        updateCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+                        int rows = updateCmd.ExecuteNonQuery();
+                        if (rows == 0)
+                        {
+                            ShowAlert("Already Tapped Out", empName, $"{dept} - {sec}", "Out", "warning");
+                        }
+                        else
+                        {
+                            ShowAlert("You have tapped out successfully!", empName, $"{dept} - {sec}", "Out", "success");
+                        }
+                    }
+                }
+
+                // Clear textbox for next tap
+                txtCardSerial.Text = "";
+            }
+        }
+
+        private void ShowAlert(string title, string name, string deptSec, string mode, string status)
+        {
+            string alertClass = "alert-secondary";
+            string icon = "bi-info-circle-fill";
+            string dateTimeHtml = "";
+
+            if (status == "success")
+            {
+                if (mode == "In")
+                {
+                    alertClass = "alert-success";
+                    icon = "bi-box-arrow-in-right";
+                    dateTimeHtml = $"<hr><p class='mb-0'>{DateTime.Now:MMMM dd, yyyy hh:mm tt}</p>";
+                }
+                else if (mode == "Out")
+                {
+                    alertClass = "alert-info";
+                    icon = "bi-box-arrow-right";
+                    dateTimeHtml = $"<hr><p class='mb-0'>{DateTime.Now:MMMM dd, yyyy hh:mm tt}</p>";
+                }
+            }
+            else if (status == "warning")
+            {
+                alertClass = "alert-warning";
+                icon = "bi-exclamation-triangle-fill";
+            }
+            else if (status == "error")
+            {
+                alertClass = "alert-danger";
+                icon = "bi-x-circle-fill";
+            }
+
+            string alertHtml = $@"
+                <div class='alert {alertClass} shadow-sm' role='alert'>
+                    <h4 class='alert-heading'>
+                        <i class='bi {icon}'></i> {title}
+                    </h4>
+                    <p>{name}</p>
+                    <p>{deptSec}</p>
+                    {dateTimeHtml}
+                </div>";
+
+            alertPlaceholder.InnerHtml = alertHtml;
+        }
+    }
+}
+
+
+---
+
+✅ With this setup:
+
+Tap-In → success alert with DateTime
+
+Tap-Out → success alert with DateTime
+
+Invalid tap / already tapped → alert without DateTime
+
+
+
+---
+
+Do you also want me to make the warning/error alerts smaller (compact Bootstrap style) so that only successful ones look big and emphasized?
+
+
