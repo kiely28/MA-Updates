@@ -1,0 +1,272 @@
+Perfect 👍 I’ll give you a complete, copiable block that contains only the updated parts you asked for:
+
+✅ Tap In / Tap Out radio buttons (with hidden field)
+
+✅ JavaScript (keep selected mode, reset alert timer, focus input)
+
+✅ Updated ShowAlert method
+
+✅ Updated txtCardSerial_TextChanged method (with reset + preserve tap mode)
+
+✅ Sample Stored Procedure (usp_HandleTap)
+
+
+
+---
+
+🔹 ASPX Markup (radio buttons + hidden field + alert placeholder)
+
+<div class="row">
+    <div class="col-3 col-lg-3 mb-3">
+        <input type="radio" class="btn-check" name="tapMode" id="radioIn" value="In" autocomplete="off">
+        <label class="btn btn-outline-primary w-100 btn-lg" for="radioIn">In</label>
+    </div>
+    <div class="col-3 col-lg-3 mb-3">
+        <input type="radio" class="btn-check" name="tapMode" id="radioOut" value="Out" autocomplete="off">
+        <label class="btn btn-outline-secondary w-100 btn-lg" for="radioOut">Out</label>
+    </div>
+</div>
+
+<!-- Hidden field to store tap mode -->
+<asp:HiddenField ID="hfTapMode" runat="server" />
+
+<!-- Alert placeholder -->
+<asp:Label ID="lblAlert" runat="server" EnableViewState="false"></asp:Label>
+
+<!-- Card serial textbox -->
+<asp:TextBox ID="txtCardSerial" runat="server" AutoPostBack="true" 
+    OnTextChanged="txtCardSerial_TextChanged" CssClass="form-control"></asp:TextBox>
+
+
+---
+
+🔹 JavaScript (place before </body>)
+
+<script type="text/javascript">
+    var tapModeHidden = document.getElementById('<%= hfTapMode.ClientID %>');
+
+    function setTapMode(value) {
+        tapModeHidden.value = value;
+        document.querySelector("label[for='radioIn']").classList.remove("active");
+        document.querySelector("label[for='radioOut']").classList.remove("active");
+        document.querySelector("label[for='radio" + value + "']").classList.add("active");
+    }
+
+    document.querySelectorAll("input[name='tapMode']").forEach(function (radio) {
+        radio.addEventListener("change", function () {
+            setTapMode(this.value);
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var currentMode = tapModeHidden.value || "In";
+        document.getElementById("radio" + currentMode).checked = true;
+        setTapMode(currentMode);
+    });
+
+    // Auto dismiss alerts with reset timer
+    var fadeTimer;
+    function fadeOutAlert() {
+        clearTimeout(fadeTimer);
+        fadeTimer = setTimeout(function () {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function (alert) {
+                alert.style.transition = "opacity 1s";
+                alert.style.opacity = "0";
+                setTimeout(function () { alert.remove(); }, 1000);
+            });
+        }, 5000);
+    }
+</script>
+
+
+---
+
+🔹 Code-Behind (C#)
+
+protected void txtCardSerial_TextChanged(object sender, EventArgs e)
+{
+    string cardSerial = txtCardSerial.Text.Trim();
+    string meetingId = hfMeetingID.Value;
+    string tapMode = hfTapMode.Value; // "In" or "Out"
+
+    if (string.IsNullOrEmpty(cardSerial))
+    {
+        ShowAlert("Invalid Tap", "", "", "alert-warning", false, false);
+        ClearEmployeeDetails();
+        ResetCardInput();
+        return;
+    }
+
+    try
+    {
+        using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["MyConnection"].ConnectionString))
+        using (SqlCommand cmd = new SqlCommand("usp_HandleTap", conn))
+        {
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@CardSerial", cardSerial);
+            cmd.Parameters.AddWithValue("@MeetingID", meetingId);
+            cmd.Parameters.AddWithValue("@TapMode", tapMode);
+
+            SqlParameter statusParam = new SqlParameter("@Status", SqlDbType.VarChar, 50) { Direction = ParameterDirection.Output };
+            SqlParameter fullNameParam = new SqlParameter("@FullName", SqlDbType.VarChar, 100) { Direction = ParameterDirection.Output };
+            SqlParameter deptParam = new SqlParameter("@Department", SqlDbType.VarChar, 100) { Direction = ParameterDirection.Output };
+
+            cmd.Parameters.Add(statusParam);
+            cmd.Parameters.Add(fullNameParam);
+            cmd.Parameters.Add(deptParam);
+
+            conn.Open();
+            cmd.ExecuteNonQuery();
+
+            string status = statusParam.Value?.ToString();
+            string fullName = fullNameParam.Value?.ToString();
+            string dept = deptParam.Value?.ToString();
+
+            if (status == "TapInSuccess")
+            {
+                ShowAlert("You have tapped in successfully!", fullName, dept, "alert-success", true, true);
+            }
+            else if (status == "TapOutSuccess")
+            {
+                ShowAlert("You have tapped out successfully!", fullName, dept, "alert-success", true, true);
+            }
+            else if (status == "AlreadyTappedIn")
+            {
+                ShowAlert("Already tapped in today.", "", "", "alert-warning", false, false);
+                ClearEmployeeDetails();
+            }
+            else if (status == "AlreadyTappedOut")
+            {
+                ShowAlert("Already tapped out today.", "", "", "alert-warning", false, false);
+                ClearEmployeeDetails();
+            }
+            else
+            {
+                ShowAlert("Invalid Tap", "", "", "alert-danger", false, false);
+                ClearEmployeeDetails();
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        ShowAlert("Error", ex.Message, "", "alert-danger", false, false);
+        ClearEmployeeDetails();
+    }
+
+    ResetCardInput();
+}
+
+private void ResetCardInput()
+{
+    txtCardSerial.Text = string.Empty;
+
+    ScriptManager.RegisterStartupScript(this, GetType(), "focusCard",
+        "document.getElementById('" + txtCardSerial.ClientID + "').focus();", true);
+
+    ScriptManager.RegisterStartupScript(this, GetType(), "restoreTapMode",
+        "setTapMode('" + hfTapMode.Value + "');", true);
+}
+
+private void ClearEmployeeDetails()
+{
+    lblFullName.Text = string.Empty;
+    lblDepartment.Text = string.Empty;
+}
+
+protected void ShowAlert(string message, string fullName, string dept, string alertClass, bool showDetails, bool showDateTime)
+{
+    string dateTimeHtml = showDateTime ? $"<p class='mb-0'>{DateTime.Now:MM/dd/yyyy hh:mm tt}</p>" : "";
+    string detailsHtml = showDetails
+        ? $"<p>{fullName}</p><p>{dept}</p><hr>{dateTimeHtml}"
+        : "";
+
+    string alertHtml = $@"
+        <div class='alert {alertClass}' role='alert'>
+            <h4 class='alert-heading'>{message}</h4>
+            {detailsHtml}
+        </div>";
+
+    lblAlert.Text = alertHtml;
+
+    ScriptManager.RegisterStartupScript(this, GetType(), "fadeOutAlert", "fadeOutAlert();", true);
+}
+
+
+---
+
+🔹 SQL Stored Procedure (usp_HandleTap)
+
+CREATE PROCEDURE usp_HandleTap
+    @CardSerial NVARCHAR(50),
+    @MeetingID NVARCHAR(50),
+    @TapMode NVARCHAR(10),
+    @Status NVARCHAR(50) OUTPUT,
+    @FullName NVARCHAR(100) OUTPUT,
+    @Department NVARCHAR(100) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @EmpID INT;
+
+    SELECT @EmpID = EmpID,
+           @FullName = FullName,
+           @Department = Department
+    FROM tbl_employee
+    WHERE CardSerial = @CardSerial;
+
+    IF @EmpID IS NULL
+    BEGIN
+        SET @Status = 'Invalid';
+        RETURN;
+    END
+
+    IF @TapMode = 'In'
+    BEGIN
+        IF EXISTS (SELECT 1 FROM tbl_attendance WHERE EmpID = @EmpID AND MeetingID = @MeetingID AND TimeIn IS NOT NULL)
+        BEGIN
+            SET @Status = 'AlreadyTappedIn';
+            RETURN;
+        END
+
+        INSERT INTO tbl_attendance (EmpID, MeetingID, TimeIn)
+        VALUES (@EmpID, @MeetingID, GETDATE());
+
+        SET @Status = 'TapInSuccess';
+    END
+    ELSE IF @TapMode = 'Out'
+    BEGIN
+        IF EXISTS (SELECT 1 FROM tbl_attendance WHERE EmpID = @EmpID AND MeetingID = @MeetingID AND TimeOut IS NOT NULL)
+        BEGIN
+            SET @Status = 'AlreadyTappedOut';
+            RETURN;
+        END
+
+        UPDATE tbl_attendance
+        SET TimeOut = GETDATE()
+        WHERE EmpID = @EmpID AND MeetingID = @MeetingID AND TimeOut IS NULL;
+
+        SET @Status = 'TapOutSuccess';
+    END
+END
+
+
+---
+
+✅ With this single copiable update, you’ll have:
+
+Radio buttons that stay selected (In/Out).
+
+Alerts with employee details only for success.
+
+Card textbox reset + refocus after each tap.
+
+Stored procedure handling both Tap In and Tap Out correctly.
+
+
+
+---
+
+Do you want me to also include a GridView (with DataTables) sample so you can view attendees of the selected meeting along with this tap logic?
+
