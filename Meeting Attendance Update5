@@ -886,3 +886,71 @@ Invalid tap / already tapped → alert without DateTime
 Do you also want me to make the warning/error alerts smaller (compact Bootstrap style) so that only successful ones look big and emphasized?
 
 
+
+
+-- Update 04:35
+Perfect 👍 — here’s the stored procedure for Tap-Out (MA_UpdateAttendeeTimeout).
+This assumes your MeetingAttendees table has MeetingId, CardSerialNo, TimeIn, and TimeOut.
+
+
+---
+
+✅ Stored Procedure: MA_UpdateAttendeeTimeout
+
+CREATE PROCEDURE MA_UpdateAttendeeTimeout
+    @MeetingId NVARCHAR(50),
+    @CardSerialNo NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Update only if the employee already tapped IN and has no TimeOut yet
+    UPDATE MeetingAttendees
+    SET TimeOut = GETDATE()
+    WHERE MeetingId = @MeetingId
+      AND CardSerialNo = @CardSerialNo
+      AND TimeOut IS NULL;
+
+    -- Returns the number of rows affected
+    RETURN @@ROWCOUNT;
+END
+
+
+---
+
+✅ Behavior
+
+If a user already tapped in but has no TimeOut, this will update TimeOut = GETDATE().
+
+If they already tapped out (TimeOut not NULL), nothing happens (returns 0).
+
+If they never tapped in, nothing happens (returns 0).
+
+
+
+---
+
+✅ How Your C# Code Uses It
+
+using (SqlCommand updateCmd = new SqlCommand("MA_UpdateAttendeeTimeout", conn))
+{
+    updateCmd.CommandType = CommandType.StoredProcedure;
+    updateCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+    updateCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+    int rows = updateCmd.ExecuteNonQuery();
+    if (rows == 0)
+    {
+        ShowAlert("Already Tapped Out", empName, $"{dept} - {sec}", "Out", "warning");
+    }
+    else
+    {
+        ShowAlert("You have tapped out successfully!", empName, $"{dept} - {sec}", "Out", "success");
+    }
+}
+
+
+---
+
+⚡ Question: do you want me to also give you the Tap-In SP (MA_InsertAttendee) again, so both are in one place for consistency?
+
