@@ -1,0 +1,196 @@
+Ah 👍 I see the issue — right now your success alert (pnlSuccess) is an ASP.NET Panel rendered server-side, and when you call
+
+pnlSuccess.Visible = true;
+
+it renders as a normal <div> with Bootstrap’s alert classes.
+
+The JavaScript function you wrote:
+
+function showSuccessAlert() {
+    var alertBox = document.getElementById('<%= pnlSuccess.ClientID %>');
+    if (alertBox) {
+        alertBox.style.display = 'block';
+        setTimeout(function () {
+            var bsAlert = new bootstrap.Alert(alertBox);
+            bsAlert.close();
+        }, 3000); // auto-hide after 3 seconds
+    }
+}
+
+Problem:
+When you set pnlSuccess.Visible = true in code-behind, the page does a postback → re-renders → and your setTimeout won’t automatically run unless you explicitly call it on the client side after postback.
+
+
+---
+
+✅ Fix
+
+You already have this line in your code:
+
+ScriptManager.RegisterStartupScript(this, this.GetType(), "saveSuccess",
+    "closeModal(); showSuccessAlert();", true);
+
+That’s correct — it ensures showSuccessAlert() runs after Save.
+
+But your alert element is being rendered with style="display:none;" when Visible="false". When you set it to true, it doesn’t have display:block until your JS sets it. Bootstrap also needs the alert element to stay in the DOM for bootstrap.Alert to close it smoothly.
+
+
+---
+
+🔨 Solution Option 1 (Simplest)
+
+Don’t toggle Visible server-side. Always render the alert, but hide it with CSS initially.
+
+ASPX:
+
+<asp:Panel ID="pnlSuccess" runat="server" CssClass="alert alert-success d-flex align-items-center alert-dismissible fade"
+    Style="display:none;">
+    <i class="fa fa-check-circle me-2"></i>
+    <div>Saved successfully.</div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</asp:Panel>
+
+Code-behind (btnSave_Click):
+
+// Instead of pnlSuccess.Visible = true;
+ScriptManager.RegisterStartupScript(this, this.GetType(), "saveSuccess",
+    "closeModal(); showSuccessAlert();", true);
+
+JS (showSuccessAlert):
+
+function showSuccessAlert() {
+    var alertBox = document.getElementById('<%= pnlSuccess.ClientID %>');
+    if (alertBox) {
+        alertBox.style.display = 'block'; // make visible
+        alertBox.classList.add("show");   // show bootstrap animation
+        setTimeout(function () {
+            var bsAlert = bootstrap.Alert.getOrCreateInstance(alertBox);
+            bsAlert.close();
+        }, 3000);
+    }
+}
+
+
+---
+
+🔨 Solution Option 2 (Keep Visible toggle)
+
+If you want to keep using pnlSuccess.Visible = true;, then just ensure you don’t overwrite the alert’s fade/show state. Add fade show classes when rendering:
+
+<asp:Panel ID="pnlSuccess" runat="server" 
+    CssClass="alert alert-success alert-dismissible fade" 
+    Visible="false">
+    <i class="fa fa-check-circle me-2"></i>
+    <div>Saved successfully.</div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</asp:Panel>
+
+Then in JS:
+
+function showSuccessAlert() {
+    var alertBox = document.getElementById('<%= pnlSuccess.ClientID %>');
+    if (alertBox) {
+        alertBox.classList.add("show");
+        setTimeout(function () {
+            var bsAlert = bootstrap.Alert.getOrCreateInstance(alertBox);
+            bsAlert.close();
+        }, 3000);
+    }
+}
+
+
+---
+
+👉 With this, when you hit Save, your alert will slide in, stay for 3s, then auto-hide just like native Bootstrap alerts.
+
+
+---
+
+Do you want me to adjust your ASPX + code-behind to the final working version (copy-paste ready)?
+
+
+
+-- Update Gridview
+
+Perfect 👍 let’s enhance it:
+
+Light red (expired): if EndDate < DateTime.Now and Status = "Scheduled".
+
+Light yellow (ongoing): if StartDate <= DateTime.Now <= EndDate and Status = "Scheduled".
+
+
+
+---
+
+✅ CSS (put inside your page or site stylesheet)
+
+.row-expired {
+    background-color: #f8d7da !important;  /* light red (Bootstrap danger-light) */
+}
+.row-ongoing {
+    background-color: #fff3cd !important;  /* light yellow (Bootstrap warning-light) */
+}
+
+
+---
+
+✅ Code-Behind (C#)
+
+protected void gvMeetings_RowDataBound(object sender, GridViewRowEventArgs e)
+{
+    if (e.Row.RowType == DataControlRowType.DataRow)
+    {
+        DateTime startDate, endDate;
+        string status = DataBinder.Eval(e.Row.DataItem, "Status").ToString();
+
+        bool hasStart = DateTime.TryParse(DataBinder.Eval(e.Row.DataItem, "StartDate").ToString(), out startDate);
+        bool hasEnd = DateTime.TryParse(DataBinder.Eval(e.Row.DataItem, "EndDate").ToString(), out endDate);
+
+        if (hasStart && hasEnd && status.Equals("Scheduled", StringComparison.OrdinalIgnoreCase))
+        {
+            DateTime now = DateTime.Now;
+
+            if (endDate < now)
+            {
+                // Expired meeting
+                e.Row.CssClass = "row-expired";
+            }
+            else if (startDate <= now && now <= endDate)
+            {
+                // Ongoing meeting
+                e.Row.CssClass = "row-ongoing";
+            }
+        }
+    }
+}
+
+
+---
+
+✅ ASPX GridView
+
+Make sure you hook up the event:
+
+<asp:GridView ID="gvMeetings" runat="server" AutoGenerateColumns="False" CssClass="table table-bordered"
+    OnRowDataBound="gvMeetings_RowDataBound">
+    <Columns>
+        <asp:BoundField DataField="MeetingID" HeaderText="Meeting ID" />
+        <asp:BoundField DataField="StartDate" HeaderText="Start Date" DataFormatString="{0:MM/dd/yyyy HH:mm}" />
+        <asp:BoundField DataField="EndDate" HeaderText="End Date" DataFormatString="{0:MM/dd/yyyy HH:mm}" />
+        <asp:BoundField DataField="Status" HeaderText="Status" />
+    </Columns>
+</asp:GridView>
+
+
+---
+
+👉 This way your GridView rows will auto-highlight:
+
+Red if already missed.
+
+Yellow if currently ongoing.
+
+
+Would you like me to also add green (light success) if the status becomes "Completed"?
+
+
