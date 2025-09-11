@@ -1,0 +1,112 @@
+Thanks for sharing your full code 👍
+I reviewed both your .aspx markup and code-behind, and overall it looks structured and should work. I’ll highlight some issues, fixes, and suggestions:
+
+
+---
+
+🔎 Markup (ASPX) Issues & Fixes
+
+1. View Attendees Button
+
+<button class="btn btn-info text-white me-2 w-auto">View Attendees</button>
+
+This is plain HTML, so it won’t trigger your btnViewAttendees_Click event in code-behind.
+✅ Replace with:
+
+
+<asp:Button ID="btnViewAttendees" runat="server" CssClass="btn btn-info text-white me-2 w-auto"
+    Text="View Attendees" OnClick="btnViewAttendees_Click" />
+
+
+2. End Meeting Button
+
+<button class="btn btn-danger w-auto">End Meeting</button>
+
+Same problem: plain <button> won’t hit server-side events.
+✅ Replace with:
+
+
+<asp:Button ID="btnEndMeeting" runat="server" CssClass="btn btn-danger w-auto"
+    Text="End Meeting" OnClick="btnEndMeeting_Click" />
+
+
+
+
+---
+
+🔎 Code-behind Issues & Fixes
+
+1. Employee Info Mapping
+
+empName = reader["FirstName"].ToString();
+dept = reader["LastName"].ToString();
+sec = reader["FirstName"].ToString();
+
+Looks like a copy-paste bug: you assign FirstName twice.
+✅ Correct mapping should be (adjust to your table fields):
+
+
+empName = reader["FirstName"].ToString() + " " + reader["LastName"].ToString();
+dept = reader["Department"].ToString();
+sec = reader["Section"].ToString();
+
+
+2. Duplicate Attendee Handling
+
+object result = insertCmd.ExecuteScalar();
+if (result != null && result.ToString() == "0")
+
+This works if your stored procedure returns "0" for duplicates.
+✅ Consider making it more explicit (e.g., return an output parameter) for readability:
+
+
+RETURN 0 -- duplicate
+RETURN 1 -- success
+
+
+3. Auto Fade-Out Alert
+
+You correctly used:
+
+ScriptManager.RegisterStartupScript(this, GetType(), "fadeOutAlert", "fadeOutAlert();", true);
+
+
+✅ Ensure your <form runat="server"> is wrapped inside a ScriptManager:
+
+<asp:ScriptManager ID="ScriptManager1" runat="server" />
+
+
+
+
+---
+
+🔎 Recommended Improvements
+
+SQL Injection Safety → You already use stored procedures, ✅ good.
+
+Error Handling → Wrap DB code in try-catch to show a friendly error in alert.
+
+Separation of Concerns → Consider moving DB logic into a helper class (cleaner code-behind).
+
+UX → Disable the txtCardSerial after tap for 1s to prevent double-post.
+
+
+
+---
+
+✅ With these changes, your page will:
+
+Correctly redirect when clicking "View Attendees".
+
+Handle "End Meeting" server-side.
+
+Show correct employee details.
+
+Keep the Bootstrap alerts working smoothly.
+
+
+
+---
+
+Do you want me to add the End Meeting logic in your code-behind (e.g., update meeting status + redirect), or just keep the button wired up?
+
