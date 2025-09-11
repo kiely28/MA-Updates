@@ -193,3 +193,165 @@ Use Option 1 (SetFocus) for initial load + Option 3 (set focus again after postb
 Do you want me to integrate this directly into your txtCardSerial_TextChanged method and Page_Load so it’s copy-paste ready?
 
 
+
+-- Update 12:39
+Got it 👍 You already have the Tap-In logic (which inserts into MA_InsertAttendee), so for Tap-Out, we’ll just update the record’s TimeOut instead of inserting again.
+
+Here’s how we can do it step by step:
+
+
+---
+
+1. Add Tap Mode Selection (Radio Button)
+
+You already have In/Out radio buttons in your markup.
+They just need to be tied to server code.
+
+Change your radio buttons like this:
+
+<div class="col-3 col-lg-3 mb-3">
+    <asp:RadioButton ID="radioIn" runat="server" GroupName="TapMode" Checked="true"
+        CssClass="btn-check" />
+    <label class="btn btn-outline-primary w-100 btn-lg" for="<%= radioIn.ClientID %>">In</label>
+</div>
+<div class="col-3 col-lg-3 mb-3">
+    <asp:RadioButton ID="radioOut" runat="server" GroupName="TapMode"
+        CssClass="btn-check" />
+    <label class="btn btn-outline-secondary w-100 btn-lg" for="<%= radioOut.ClientID %>">Out</label>
+</div>
+
+
+---
+
+2. Update txtCardSerial_TextChanged
+
+We’ll detect if the user tapped In or Out, then run the correct stored procedure.
+
+protected void txtCardSerial_TextChanged(object sender, EventArgs e)
+{
+    string cardSerial = txtCardSerial.Text.Trim();
+    string meetingId = hfMeetingID.Value;
+
+    if (string.IsNullOrEmpty(cardSerial))
+    {
+        ShowAlert("Invalid Tap", "Please place your card on the reader.", "", "alert-warning");
+        return;
+    }
+
+    string connStr = ConfigurationManager.ConnectionStrings["MeetingDb"].ConnectionString;
+
+    using (SqlConnection conn = new SqlConnection(connStr))
+    {
+        conn.Open();
+
+        // 1. Validate Employee
+        string empName = "";
+        string dept = "";
+        string sec = "";
+
+        using (SqlCommand cmd = new SqlCommand("MA_CheckEmployeeByCard", conn))
+        {
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+            SqlDataReader reader = cmd.ExecuteReader();
+            if (!reader.Read())
+            {
+                ShowAlert("Card Not Registered", "Unknown Card", "", "alert-danger");
+                return;
+            }
+
+            empName = reader["FirstName"].ToString() + " " + reader["LastName"].ToString();
+            dept = reader["Department"].ToString();
+            sec = reader["Section"].ToString();
+            reader.Close();
+        }
+
+        // 2. Check tap mode (In/Out)
+        if (radioIn.Checked)
+        {
+            // Insert (Tap-In)
+            using (SqlCommand insertCmd = new SqlCommand("MA_InsertAttendee", conn))
+            {
+                insertCmd.CommandType = CommandType.StoredProcedure;
+                insertCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+                insertCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+                object result = insertCmd.ExecuteScalar();
+
+                if (result != null && result.ToString() == "0")
+                {
+                    ShowAlert("Already Tapped In", empName, $"{dept} - {sec}", "alert-warning");
+                }
+                else
+                {
+                    ShowAlert("You have tapped in successfully!", empName, $"{dept} - {sec}", "alert-success");
+                }
+            }
+        }
+        else if (radioOut.Checked)
+        {
+            // Update (Tap-Out)
+            using (SqlCommand updateCmd = new SqlCommand("MA_UpdateAttendeeTimeout", conn))
+            {
+                updateCmd.CommandType = CommandType.StoredProcedure;
+                updateCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+                updateCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+                int rows = updateCmd.ExecuteNonQuery();
+
+                if (rows > 0)
+                {
+                    ShowAlert("You have tapped out successfully!", empName, $"{dept} - {sec}", "alert-info");
+                }
+                else
+                {
+                    ShowAlert("No active tap-in found", empName, $"{dept} - {sec}", "alert-warning");
+                }
+            }
+        }
+
+        // Clear for next tap
+        txtCardSerial.Text = "";
+        ScriptManager.RegisterStartupScript(this, GetType(), "setFocus",
+            $"document.getElementById('{txtCardSerial.ClientID}').focus();", true);
+    }
+}
+
+
+---
+
+3. New Stored Procedure for Tap-Out
+
+Add this to your SQL database:
+
+CREATE PROCEDURE MA_UpdateAttendeeTimeout
+    @MeetingId NVARCHAR(50),
+    @CardSerialNo NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE MeetingAttendees
+    SET TimeOut = GETDATE()
+    WHERE MeetingId = @MeetingId
+      AND CardSerialNo = @CardSerialNo
+      AND TimeOut IS NULL; -- only update if still active
+END
+
+
+---
+
+✅ Now your workflow is:
+
+Tap-In → Inserts new record (TimeIn).
+
+Tap-Out → Updates TimeOut of the existing record (no duplicate inserts).
+
+
+
+---
+
+Do you want me to also prevent multiple Tap-Outs (so they can’t tap out twice in the same meeting), or should it just silently update TimeOut every time?
+
+
