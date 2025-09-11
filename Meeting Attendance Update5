@@ -110,3 +110,86 @@ Keep the Bootstrap alerts working smoothly.
 
 Do you want me to add the End Meeting logic in your code-behind (e.g., update meeting status + redirect), or just keep the button wired up?
 
+
+-- Update 12:20
+Good question 👍 If you want the cursor to always focus on the txtCardSerial textbox, there are a couple of clean ways to do it in ASP.NET Web Forms.
+
+
+---
+
+✅ Option 1: Use Page.SetFocus in Page_Load
+
+In your meetingattendance.aspx.cs:
+
+protected void Page_Load(object sender, EventArgs e)
+{
+    if (!IsPostBack)
+    {
+        string meetingId = Request.QueryString["meetingId"];
+        if (!string.IsNullOrEmpty(meetingId))
+        {
+            LoadMeetingDetails(meetingId);
+        }
+        else
+        {
+            lblTitle.Text = "Invalid Meeting";
+            lblDateTime.Text = "";
+        }
+    }
+
+    // Always focus on the textbox after page load or postback
+    Page.SetFocus(txtCardSerial);
+}
+
+
+---
+
+✅ Option 2: Use JavaScript for Continuous Focus
+
+Sometimes after postbacks or if the user clicks elsewhere, the focus is lost.
+You can enforce focus via JS:
+
+In your ASPX page (inside <form> but after textbox):
+
+<script type="text/javascript">
+    window.onload = function () {
+        var cardBox = document.getElementById('<%= txtCardSerial.ClientID %>');
+        if (cardBox) {
+            cardBox.focus();
+        }
+    };
+
+    // Re-focus after each partial postback (if using UpdatePanel in future)
+    Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {
+        var cardBox = document.getElementById('<%= txtCardSerial.ClientID %>');
+        if (cardBox) {
+            cardBox.focus();
+        }
+    });
+</script>
+
+
+---
+
+✅ Option 3: Force Focus After Tapping
+
+At the end of your txtCardSerial_TextChanged handler:
+
+txtCardSerial.Text = "";
+ScriptManager.RegisterStartupScript(this, GetType(), "setFocus",
+    $"document.getElementById('{txtCardSerial.ClientID}').focus();", true);
+
+This way, after every tap, the textbox clears and gets focus again.
+
+
+---
+
+👉 Best practice:
+Use Option 1 (SetFocus) for initial load + Option 3 (set focus again after postback) so your input is always ready for the next card swipe.
+
+
+---
+
+Do you want me to integrate this directly into your txtCardSerial_TextChanged method and Page_Load so it’s copy-paste ready?
+
+
