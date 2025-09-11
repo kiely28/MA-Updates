@@ -377,3 +377,83 @@ namespace WebApplication1_MAL
 
     }
 }
+
+
+
+-- Update 09:57
+Perfect 👍 then we’ll stick with your individual asp:RadioButton controls, but make sure the toggle labels work properly.
+
+The issue is just the label for attribute binding. Using <%= ... %> doesn’t always resolve at render time in ASP.NET Web Forms.
+
+
+---
+
+✅ Corrected Code (closest to your current)
+
+<div class="col-3 col-lg-3 mb-3">
+    <asp:RadioButton ID="radioIn" runat="server" GroupName="TapOptions"
+        Checked="true" CssClass="btn-check" />
+    <label class="btn btn-outline-primary w-100 btn-lg btn-lg-custom"
+           for="<%# radioIn.ClientID %>">In</label>
+</div>
+
+<div class="col-3 col-lg-3 mb-3">
+    <asp:RadioButton ID="radioOut" runat="server" GroupName="TapOptions"
+        CssClass="btn-check" />
+    <label class="btn btn-outline-secondary w-100 btn-lg btn-lg-custom"
+           for="<%# radioOut.ClientID %>">Out</label>
+</div>
+
+
+---
+
+✅ Page_Load Fix
+
+Add Page.DataBind(); inside !IsPostBack so the <%# ... %> data-binding resolves correctly:
+
+protected void Page_Load(object sender, EventArgs e)
+{
+    if (!IsPostBack)
+    {
+        Page.DataBind(); // ✅ makes labels bind correctly
+
+        string meetingId = Request.QueryString["meetingId"];
+        if (!string.IsNullOrEmpty(meetingId))
+        {
+            LoadMeetingDetails(meetingId);
+        }
+        else
+        {
+            lblTitle.Text = "Invalid Meeting";
+            lblDateTime.Text = "";
+        }
+    }
+}
+
+
+---
+
+✅ Result
+
+Your Bootstrap button-toggle radios will now work as expected.
+
+Clicking the In or Out label toggles the correct ASP.NET radio.
+
+Code-behind still works with:
+
+
+if (radioIn.Checked)
+{
+    // Tap In logic
+}
+else if (radioOut.Checked)
+{
+    // Tap Out logic
+}
+
+
+---
+
+👉 Do you also want me to add Bootstrap’s “active” style so the selected button looks pressed (.active)?
+
+
