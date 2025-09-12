@@ -1,0 +1,57 @@
+Got it 👍 — the main issue is that your radio buttons (In / Out) don’t preserve their checked state after postback because they’re plain HTML inputs (not asp:RadioButtonList).
+
+Since you already have a hidden field (hfTapMode) that holds the selected mode, you just need to sync it back to the radio buttons on page load.
+
+Here’s the fix:
+
+
+---
+
+✅ JavaScript Fix
+
+Replace your current radio button script with this:
+
+<script type="text/javascript">
+    // When user changes radio button, update hidden field
+    document.querySelectorAll('input[name="tapMode"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            document.getElementById('<%= hfTapMode.ClientID %>').value = this.value;
+        });
+    });
+
+    // On page load, restore the radio button from hidden field
+    document.addEventListener("DOMContentLoaded", function () {
+        var savedMode = document.getElementById('<%= hfTapMode.ClientID %>').value;
+
+        if (!savedMode) {
+            savedMode = "In"; // default
+            document.getElementById('<%= hfTapMode.ClientID %>').value = savedMode;
+        }
+
+        var radioToCheck = document.getElementById("radio" + savedMode);
+        if (radioToCheck) {
+            radioToCheck.checked = true;
+        }
+    });
+</script>
+
+
+---
+
+✅ What this does
+
+1. When you click In/Out, the value is saved to the hidden field hfTapMode.
+
+
+2. After a postback (e.g., when tapping a card), the hidden field still has the last selected value.
+
+
+3. On page reload, the script checks that value and re-applies it to the correct radio button.
+
+
+
+
+---
+
+👉 Do you want me to integrate this directly into your full .aspx code so you can copy-paste, or just keep it as a drop-in replacement for your existing script?
+
