@@ -55,3 +55,64 @@ Replace your current radio button script with this:
 
 👉 Do you want me to integrate this directly into your full .aspx code so you can copy-paste, or just keep it as a drop-in replacement for your existing script?
 
+
+---
+
+Ah, I see what’s happening 👀
+
+Right now, both In and Out are using the Bootstrap btn-check + label.btn pattern. Bootstrap automatically adds the "highlight" (active button style) to the label of whichever radio is checked.
+
+But in your restore script, you only set .checked = true without unchecking the other one — so both buttons can look highlighted for a moment.
+
+
+---
+
+✅ Fixed Script (forces only one active button)
+
+<script type="text/javascript">
+    // When user changes radio button, update hidden field
+    document.querySelectorAll('input[name="tapMode"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            document.getElementById('<%= hfTapMode.ClientID %>').value = this.value;
+        });
+    });
+
+    // On page load, restore the radio button from hidden field
+    document.addEventListener("DOMContentLoaded", function () {
+        var savedMode = document.getElementById('<%= hfTapMode.ClientID %>').value;
+
+        if (!savedMode) {
+            savedMode = "In"; // default
+            document.getElementById('<%= hfTapMode.ClientID %>').value = savedMode;
+        }
+
+        // Uncheck all radios first
+        document.querySelectorAll('input[name="tapMode"]').forEach(function (r) {
+            r.checked = false;
+        });
+
+        // Check only the saved one
+        var radioToCheck = document.getElementById("radio" + savedMode);
+        if (radioToCheck) {
+            radioToCheck.checked = true;
+        }
+    });
+</script>
+
+
+---
+
+🔧 What Changed
+
+1. Before setting the correct one, we clear (checked = false) all radios in the tapMode group.
+
+
+2. Then we apply the saved one → Bootstrap highlights only that label.
+
+
+
+
+---
+
+Do you want me to insert this directly into your full .aspx file and show you exactly where to replace your old script?
+
