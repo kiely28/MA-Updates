@@ -116,3 +116,92 @@ But in your restore script, you only set .checked = true without unchecking the 
 
 Do you want me to insert this directly into your full .aspx file and show you exactly where to replace your old script?
 
+
+---
+Got it 👍 — thanks for the detail.
+
+From what you describe:
+
+When you tap out, your SP (MA_UpdateAttendeeTimeout) updates the Timeout in the database correctly ✅.
+
+But your app still shows the alert "Already tapped out or no tap-in found" ❌.
+
+
+That means the stored procedure return value and your C# logic don’t match.
+
+
+---
+
+🔎 Current Code (Tap Out section)
+
+using (SqlCommand updateCmd = new SqlCommand("MA_UpdateAttendeeTimeout", conn))
+{
+    updateCmd.CommandType = CommandType.StoredProcedure;
+    updateCmd.Parameters.AddWithValue("@MeetingId", meetingId);
+    updateCmd.Parameters.AddWithValue("@CardSerialNo", cardSerial);
+
+    object result = updateCmd.ExecuteScalar();
+    int rows = (result != null) ? Convert.ToInt32(result) : 0;
+
+    if (rows > 0)
+    {
+        ShowAlert("You have tapped out successfully!", empName, dept, "alert-info");
+    }
+    else
+    {
+        ShowAlert("Already tapped out or no tap-in found", empName, dept, "alert-warning");
+    }
+}
+
+
+---
+
+⚠️ Problem
+
+ExecuteScalar() expects the SP to return a single value (like 1 if updated, 0 if not).
+
+If your SP just does an UPDATE ... without a RETURN or SELECT, ExecuteScalar() will return null.
+
+That explains why your alert logic thinks no rows were affected, even though the DB was updated.
+
+
+
+---
+
+✅ Fix Option 1: Change to ExecuteNonQuery
+
+If your SP only updates rows and doesn’t return anything, you should use ExecuteNonQuery():
+
+int rows = updateCmd.ExecuteNonQuery();
+
+if (rows > 0)
+{
+    ShowAlert("You have tapped out successfully!", empName, dept, "alert-info");
+}
+else
+{
+    ShowAlert("Already tapped out or no tap-in found", empName, dept, "alert-warning");
+}
+
+
+---
+
+✅ Fix Option 2: Make SP return a value
+
+If you want to keep ExecuteScalar(), make sure your SP ends with something like:
+
+SELECT @@ROWCOUNT;
+
+or
+
+RETURN @@ROWCOUNT;
+
+That way your C# result will match the number of affected rows.
+
+
+---
+
+👉 Question for you:
+Do you want me to adjust only your C# code to use ExecuteNonQuery(), or do you also want me to rewrite the stored procedure (MA_UpdateAttendeeTimeout) so it always returns a value to match ExecuteScalar()?
+
+
