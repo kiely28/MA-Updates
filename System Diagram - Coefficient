@@ -1,0 +1,173 @@
+Great 👍 Here’s your System Diagram with Data Flow in tree-style bullets — this shows not just the components, but also how data moves between them step by step.
+
+
+---
+
+🔹 Centralized Automation App – System + Data Flow Diagram
+
+User
+
+Opens Central App UI
+
+Selects:
+
+KP26 scenario → uses Cost Center Excel
+
+SALR scenario → uploads Coefficient Excel
+
+
+
+
+
+---
+
+Central App UI
+
+Triggers WinActor automation based on button selection
+
+Passes input parameters → file paths, Run ID, scenario type
+
+
+
+
+---
+
+WinActor Automation
+
+SAP Interaction
+
+Opens SAP → login via macro
+
+Executes Tcodes (KP26, KP27, SALR)
+
+Receives system responses/messages → used for logging
+
+
+Excel Interaction
+
+Reads input files:
+
+Cost Center list (for KP26)
+
+Coefficient file (for SALR)
+
+
+Writes outputs:
+
+Prooflist Excel (with status + screenshots reference)
+
+
+
+Macro Execution
+
+Calculates fiscal quarter (+1 month) → provides input values for SAP
+
+Validates coefficient file → ensures correct quarter & values
+
+Compiles Outlook recipients → provides TO/CC list
+
+
+Screenshot Capture
+
+Each save/update → stored in Proof folder
+
+Paths recorded in Prooflist Excel
+
+
+
+
+
+---
+
+SAP System
+
+Receives input from WinActor:
+
+KP26 → cost center values (quarterly)
+
+KP27 → verification request
+
+SALR → add/update/delete % O/H rates
+
+
+Returns output:
+
+Success/failure messages → captured by WinActor
+
+Screen display → captured as screenshots
+
+
+
+
+
+---
+
+Excel Files (Data Flow)
+
+Input Data:
+
+Cost Center list → flows into WinActor → into SAP (KP26)
+
+Coefficient file → flows into WinActor → into SAP (SALR)
+
+Recipient list → flows into Outlook for email notification
+
+
+Output Data:
+
+Prooflist Excel ← created by WinActor ← data from SAP updates + screenshots
+
+Used later as email attachment
+
+
+
+
+
+---
+
+Outlook (Email Notification)
+
+Input:
+
+Recipient list (from Excel)
+
+Email body (from .txt file)
+
+Prooflist Excel (from WinActor output)
+
+
+Output:
+
+Sent email → recipients notified with attachment
+
+
+
+
+
+---
+
+Logging & Archive (Audit Trail)
+
+Input: Run ID + system execution data (time, user, errors, proof files)
+
+Output:
+
+Run folder with logs, Prooflist, screenshots
+
+Archived by timestamp for auditing
+
+
+
+
+
+---
+
+✅ With this view, you can trace data flow like a pipeline:
+Excel Input → WinActor → SAP → Prooflist (Excel + Screenshots) → Outlook → Recipients
+
+
+---
+
+Do you want me to condense this into a single linear flow (like a pipeline bullet chain) so it reads as:
+User → App UI → WinActor → SAP → Excel Prooflist → Outlook → Notification → Archive?
+
