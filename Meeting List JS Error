@@ -473,3 +473,64 @@ protected void btnLogout_Click(object sender, EventArgs e)
     <li class="breadcrumb-item active">Meetings</li>
 </ol>
 
+
+---
+
+Nice question 👍 — this is the same problem.
+
+When you write:
+
+<a href="home.aspx">Dashboard</a>
+
+➡️ The browser will look for http://myserver/home.aspx ❌ if you’re not in /MyApp/ context.
+It won’t automatically prepend /MyApp/.
+
+
+---
+
+✅ Fix Options
+
+1. Use ResolveUrl
+
+<a href="<%= ResolveUrl("~/home.aspx") %>">Dashboard</a>
+
+This ensures it always resolves to:
+
+http://myserver/MyApp/home.aspx
+
+
+---
+
+2. Use runat="server" on the link
+
+ASP.NET will resolve ~ automatically if you add runat="server":
+
+<a runat="server" href="~/home.aspx">Dashboard</a>
+
+
+---
+
+3. Use asp:HyperLink control (if you prefer server controls)
+
+<asp:HyperLink ID="lnkDashboard" runat="server" 
+    NavigateUrl="~/home.aspx" Text="Dashboard" CssClass="breadcrumb-item" />
+
+
+---
+
+🔑 Your Fixed Breadcrumb
+
+Here’s how I’d fix it (cleanest way without switching to asp:HyperLink):
+
+<ol class="breadcrumb mb-4 mt-3">
+    <li class="breadcrumb-item"><a href="<%= ResolveUrl("~/home.aspx") %>">Dashboard</a></li>
+    <li class="breadcrumb-item active">Meetings</li>
+</ol>
+
+
+---
+
+👉 Do you want me to go through your whole page and replace all navigation links (home.aspx, meetinglist.aspx, etc.) with ResolveUrl so they’ll work under any virtual directory like /MyApp/?
+
+
+
