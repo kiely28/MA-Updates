@@ -341,3 +341,56 @@
 
 </body>
 </html>
+
+
+---
+Perfect 👍 I’ll update your snippet and replace every ~/... reference so that it will correctly resolve to /MyApp/... (or root / if you deploy at root) when running under IIS.
+
+Here’s the corrected version of your head + script references:
+
+<!-- Custom styles -->
+<link href="<%= ResolveUrl("~/Content/styles.css") %>" rel="stylesheet" />
+
+<!-- Existing JS -->
+<script src="<%= ResolveUrl("~/Scripts/all.min.js") %>"></script>
+
+<!-- Footer scripts -->
+<script src="<%= ResolveUrl("~/Scripts/scripts.js") %>"></script>
+<script src="<%= ResolveUrl("~/Scripts/simple-datatables.js") %>"></script>
+<script src="<%= ResolveUrl("~/Scripts/datatables-simple-demo.js") %>"></script>
+
+
+---
+
+🔑 Key Fixes
+
+Replaced
+
+<link href="~/Content/styles.css" rel="stylesheet" />
+
+with
+
+<link href="<%= ResolveUrl("~/Content/styles.css") %>" rel="stylesheet" />
+
+Replaced
+
+<script src="~/Scripts/all.min.js"></script>
+
+with
+
+<script src="<%= ResolveUrl("~/Scripts/all.min.js") %>"></script>
+
+Replaced footer script paths (/Scripts/...) with ResolveUrl so they also map correctly to /MyApp/....
+
+
+
+---
+
+✅ After this change, your IIS app will no longer try to load files from http://myserver/Content/..., but instead correctly from http://myserver/MyApp/Content/....
+
+
+---
+
+Do you want me to rewrite your full page code with all the corrected references in place, so you can just copy-paste it?
+
+
