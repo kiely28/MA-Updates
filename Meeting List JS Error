@@ -533,4 +533,83 @@ Here’s how I’d fix it (cleanest way without switching to asp:HyperLink):
 👉 Do you want me to go through your whole page and replace all navigation links (home.aspx, meetinglist.aspx, etc.) with ResolveUrl so they’ll work under any virtual directory like /MyApp/?
 
 
+---
+
+Got it 👍
+
+When you open
+
+http://myserver/MyApp
+
+IIS will look for a default document (e.g. Default.aspx, index.html, etc.).
+Since your login page is login.aspx, IIS won’t automatically redirect there.
+
+
+---
+
+✅ Solutions
+
+Option 1: Set login.aspx as Default Document in IIS
+
+1. Open IIS Manager.
+
+
+2. Go to your site → MyApp.
+
+
+3. Double-click Default Document.
+
+
+4. Add login.aspx at the top of the list.
+(So when someone browses /MyApp, IIS serves login.aspx.)
+
+
+
+👉 Easiest if your app always starts at login.aspx.
+
+
+---
+
+Option 2: Use default.aspx to Redirect
+
+If you already have a Default.aspx (or can create one), put this inside:
+
+// Default.aspx.cs
+protected void Page_Load(object sender, EventArgs e)
+{
+    Response.Redirect("~/login.aspx");
+}
+
+This way, hitting /MyApp will bounce to /MyApp/login.aspx.
+
+
+---
+
+Option 3: Web.config Redirect
+
+Add a redirect rule in Web.config:
+
+<configuration>
+  <system.webServer>
+    <defaultDocument enabled="true">
+      <files>
+        <clear />
+        <add value="login.aspx" />
+      </files>
+    </defaultDocument>
+  </system.webServer>
+</configuration>
+
+This tells IIS that login.aspx is the default.
+
+
+---
+
+✅ Recommended: Option 3 (Web.config), because it’s clean and doesn’t require an extra redirect page.
+
+
+---
+
+Do you want me to write you a full minimal Web.config snippet (including this fix + forms auth redirect) that ensures users always get sent to login.aspx when hitting /MyApp?
+
 
