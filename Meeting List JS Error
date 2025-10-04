@@ -411,3 +411,58 @@ protected void btnLogout_Click(object sender, EventArgs e)
         }
 
 
+---
+
+Good catch 👍
+Right now your logout code is using
+
+Response.Redirect("/login.aspx");
+
+That always points to the root of the server (http://myserver/login.aspx) ❌, not inside your app virtual directory (http://myserver/MyApp/login.aspx).
+
+
+---
+
+✅ Fix: Use ResolveUrl or VirtualPathUtility
+
+Change your redirect like this:
+
+Response.Redirect(ResolveUrl("~/login.aspx"));
+
+or
+
+Response.Redirect(VirtualPathUtility.ToAbsolute("~/login.aspx"));
+
+Both will correctly resolve to:
+
+http://myserver/MyApp/login.aspx
+
+when your app is under /MyApp/.
+
+
+---
+
+🔑 Final btnLogout_Click Code
+
+protected void btnLogout_Click(object sender, EventArgs e)
+{
+    Session.Clear();
+    Session.Abandon();
+
+    if (Request.Cookies[".ASPXAUTH"] != null)
+    {
+        HttpCookie authCookie = new HttpCookie(".ASPXAUTH");
+        authCookie.Expires = DateTime.Now.AddDays(-1);
+        Response.Cookies.Add(authCookie);
+    }
+
+    // Redirect correctly to app root + login page
+    Response.Redirect(ResolveUrl("~/login.aspx"));
+}
+
+
+---
+
+👉 Do you also want me to review your other navigation links (like home.aspx, meetinglist.aspx) so they also auto-adjust for /MyApp/ instead of breaking if deployed in a virtual directory?
+
+
