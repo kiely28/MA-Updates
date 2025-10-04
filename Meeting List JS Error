@@ -394,3 +394,20 @@ Replaced footer script paths (/Scripts/...) with ResolveUrl so they also map cor
 Do you want me to rewrite your full page code with all the corrected references in place, so you can just copy-paste it?
 
 
+--  
+protected void btnLogout_Click(object sender, EventArgs e)
+        {
+            Session.Clear();
+            Session.Abandon();
+
+            if (Request.Cookies[".ASPXAUTH"] != null)
+            {
+                HttpCookie authCookie = new HttpCookie(".ASPXAUTH");
+                authCookie.Expires = DateTime.Now.AddDays(-1);
+                Response.Cookies.Add(authCookie);
+            }
+
+            Response.Redirect("/login.aspx");
+        }
+
+
