@@ -1,0 +1,114 @@
+Perfect — that’s a clear automation flow 👍
+
+Here’s a sample system diagram (in bullet / flow format) showing your described process from start to finish.
+
+
+---
+
+🧭 System Diagram: SAP Automation via WinActor
+
+1. User Interaction
+
+👤 User opens the Central App UI
+
+📱 Central App displays main menu with buttons (e.g., Run Automation)
+
+
+
+---
+
+2. Automation Trigger
+
+🖱️ User clicks “Run Automation” button
+
+App launches WinActor automation script
+
+Passes parameters (e.g., selected process: SAP Update, current date, etc.)
+
+
+
+
+---
+
+3. SAP Automation Process (via WinActor + Macro)
+
+⚙️ WinActor Automation
+
+Opens SAP GUI
+
+Executes Login Macro
+→ Enters Username and Password
+
+Executes Transaction Macro
+→ Inputs TCode (e.g., KP26) → Fills in required fields (e.g., cost center, period, value)
+
+Clicks Save in SAP
+
+Confirms successful update message
+
+
+
+
+---
+
+4. Prooflist Generation
+
+🧾 Macro / Script generates Prooflist
+
+Takes screenshot of SAP confirmation screen
+
+Stores screenshot and summary in a folder (e.g., C:\Automation\Prooflist\)
+
+Optionally compiles all proofs into an Excel / PDF summary
+
+
+
+
+---
+
+5. Email Notification
+
+📧 Automation Script / Central App
+
+Composes email notification
+→ Subject: SAP Update Completed - [Date]
+→ Body: Automation completed successfully.
+
+Attaches Prooflist file / screenshot
+
+Sends email to recipients (e.g., user, supervisor, process owner)
+
+
+
+
+---
+
+6. Logging and Completion
+
+🗃️ Central App logs process result
+
+Stores timestamp, user, and result (success/fail)
+
+
+✅ User receives email
+
+Confirms completion and proof of update
+
+
+
+
+---
+
+🧩 Data Flow Summary
+
+User → Central App → WinActor Automation → SAP System
+       ↓                              ↓
+       Prooflist Generator ←----------|
+       ↓
+       Email Notification → Recipient
+
+
+---
+
+Would you like me to generate a visual diagram image (boxes and arrows flow) of this system so you can include it in your documentation or proposal?
+
