@@ -23,3 +23,35 @@ Details are displayed in real-time, and meeting in-charges can view, monitor, an
 
 Would you like me to make this version more formal and report-style (for proposal or documentation) or simplified and visual (for presentation or infographic)?
 
+
+
+---
+
+
+Here’s a polished and complete Before and After Scenario Explanation tailored to your description:
+
+
+---
+
+Before: Using Excel VBA Macro
+
+The attendance tapping process was previously handled through an Excel VBA Macro.
+During meetings, employees had to manually tap or input their ID numbers in the Excel file, which then triggered the macro to retrieve their information and record their time-in.
+This method required each user to wait for the details to populate, often causing delays—especially during large gatherings like SV Meetings, Leaders’ Meetings, or Local Managers’ Meetings.
+Additionally, the Excel-based setup was limited to one device, prone to lag or data errors, and dependent on continuous file availability and proper macro function.
+
+
+---
+
+After: Web Attendance Tapping System
+
+The process has been enhanced through a Web-Based Attendance Tapping System designed for faster and more reliable meeting attendance logging.
+Employees can now tap their ID or scan directly through a web interface, which instantly validates the employee record and logs attendance in a centralized database.
+This system is primarily used for SV Meetings, Leaders’ Meetings, and Local Managers’ Meetings, but it is also flexible for other meetings and training sessions that require attendance tracking.
+It enables real-time monitoring, multiple device access, and accurate reporting, ensuring a seamless and efficient attendance recording experience.
+
+
+---
+
+Would you like me to create a shorter version (2–3 sentences) for slides or summary reports as well?
+
