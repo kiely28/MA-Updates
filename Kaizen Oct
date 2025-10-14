@@ -1,0 +1,25 @@
+Here’s a clear and concise Before and After Scenario Explanation you can use for your documentation or presentation:
+
+
+---
+
+Before: Using Excel VBA Macro
+
+The attendance tapping process was done using an Excel VBA Macro.
+Employees had to manually tap their ID numbers into the Excel file, which then triggered the macro to retrieve and populate their details (e.g., name, department, position) and record the time-in.
+However, this approach required users to wait several seconds for the data to populate, and the file had to remain open on a single workstation. This setup limited accessibility, caused delays during large meetings, and increased the risk of file corruption or accidental data loss.
+
+
+---
+
+After: Web Attendance Tapping System
+
+The process is now improved through a web-based attendance tapping system.
+Employees can simply tap or enter their ID via a browser interface, and the system instantly validates the user and records their attendance in a central database.
+Details are displayed in real-time, and meeting in-charges can view, monitor, and generate reports through the web dashboard. This eliminates file dependency, improves response time, and supports multiple concurrent users, making the attendance logging process more efficient and reliable.
+
+
+---
+
+Would you like me to make this version more formal and report-style (for proposal or documentation) or simplified and visual (for presentation or infographic)?
+
