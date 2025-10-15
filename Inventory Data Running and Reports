@@ -722,3 +722,25 @@ Formula Error	High	Low	Template protection	Validate and re-run
 
 Would you like me to create a visual Risk Matrix (Impact vs. Likelihood chart) summarizing these risks next? It’s helpful for presentations or management review.
 
+
+
+
+---
+
+
+     The attendance tapping process was done using an Excel VBA Macro.
+Employees had to manually tap their ID numbers into the Excel file, which then triggered the macro to retrieve and populate their details (e.g., full name, grade, department) and record the time-in.
+However, this approach required users to wait several seconds for the data to populate and increased the risk of file corruption or accidental data loss.
+
+used by meetings and trainings manage by HR and attendees in training and meetings
+
+
+     The process is now improved through a web-based attendance tapping system.
+Employees can simply tap their ID via a browser interface and the system instantly validates the user and records their attendance in a central database.
+Details are displayed in real-time and meeting in-charges can view, monitor and generate reports through the web dashboard.
+This eliminates file dependency, improves response time and supports multiple concurrent users, making the attendance logging process more efficient and reliable.
+
+     The system is primarily used for SV Meetings, Leaders Meetings and Local Managers Meetings, but it is also flexible for other meetings and training sessions that require attendance tracking.
+
+
+Benefits of using Web Attendance Tapping
