@@ -744,3 +744,26 @@ This eliminates file dependency, improves response time and supports multiple co
 
 
 Benefits of using Web Attendance Tapping
+---
+
+
+
+
+Here’s your revised Before Scenario explanation with your added detail included clearly and smoothly:
+
+
+---
+
+Before Scenario
+
+The attendance tapping process was done using an Excel VBA Macro. Employees had to manually tap their ID numbers into the Excel file, which then triggered the macro to retrieve and populate their details (e.g., full name, grade, department) and record the time-in.
+
+However, this approach required users to wait several seconds for the data to populate and increased the risk of file corruption or accidental data loss.
+
+Additionally, attendees from other sections also tapped their IDs using the same Excel file, especially during meetings and trainings managed by the section organizer, which further added to file congestion and potential data handling issues.
+
+
+---
+
+Would you like me to create the After Scenario next (for your web-based attendance tapping system) so it matches this format?
+
