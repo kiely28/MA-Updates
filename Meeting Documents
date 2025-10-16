@@ -37,3 +37,279 @@ login.aspx
 meetingattendance.aspx
 meetinglist.aspx
 viewattendees.aspx
+
+
+Here’s a clear and organized description and purpose for each table, stored procedure, and page in your Meeting Attendance Tapping Program — suitable for documentation or system description sections:
+
+
+---
+
+🗃️ Database Tables
+
+1. Tbl_Meetings
+
+Description:
+Stores all meeting details created in the system.
+Purpose:
+Acts as the main reference table for meeting information such as meeting ID, title, date, time, organizer, group, and status.
+
+
+---
+
+2. Tbl_Participants
+
+Description:
+Contains the list of all employees or users who can join or be assigned to meetings.
+Purpose:
+Serves as a master list of users with their details such as employee ID, name, department, and assigned groups for meeting attendance validation.
+
+
+---
+
+3. Tbl_Roles
+
+Description:
+Defines the different roles available in the system (e.g., Admin, Organizer, Participant).
+Purpose:
+Used to manage access levels and permissions for users within the meeting attendance system.
+
+
+---
+
+⚙️ Stored Procedures / Functions
+
+1. MA_CheckEmployeeByCard
+
+Description:
+Validates an employee’s ID or card number during attendance tapping.
+Purpose:
+Ensures that only registered participants can log attendance and retrieves their details (name, department, group) upon tapping.
+
+
+---
+
+2. MA_DeleteMeeting
+
+Description:
+Deletes a specific meeting record from the database.
+Purpose:
+Used by authorized users (e.g., Admin or Organizer) to remove meetings that were created by mistake or no longer needed.
+
+
+---
+
+3. EndMeeting
+
+Description:
+Marks a meeting as completed or ended.
+Purpose:
+Prevents further attendance tapping and finalizes the meeting for reporting or record purposes.
+
+
+---
+
+4. GetAttendeesByMeeting
+
+Description:
+Retrieves all attendees for a specific meeting.
+Purpose:
+Used to display or report the list of participants who attended a particular meeting.
+
+
+---
+
+5. GetAttendeesByMeetingId
+
+Description:
+Fetches attendees using the meeting’s unique ID.
+Purpose:
+Enables quick retrieval of attendance data tied to a specific meeting record.
+
+
+---
+
+6. GetAttendeesByOrganizer
+
+Description:
+Retrieves meetings and attendees based on the organizer’s ID.
+Purpose:
+Allows organizers to monitor attendance for the meetings they created.
+
+
+---
+
+7. GetMeetingById
+
+Description:
+Returns detailed information for a specific meeting using its ID.
+Purpose:
+Used for editing, viewing, or validating meeting information.
+
+
+---
+
+8. GetMeetingCounts
+
+Description:
+Counts total meetings by category, status, or user.
+Purpose:
+Provides summary data for dashboards or statistical reports.
+
+
+---
+
+9. GetUserMeetings
+
+Description:
+Retrieves active or upcoming meetings assigned to a specific user.
+Purpose:
+Allows users to see the meetings they can attend or are part of.
+
+
+---
+
+10. GetUserMeetingsHistory
+
+Description:
+Shows past meetings attended or created by a specific user.
+Purpose:
+Supports history viewing and report generation for user participation.
+
+
+---
+
+11. InsertAttendee
+
+Description:
+Inserts a new attendance record when a user taps their ID.
+Purpose:
+Automatically records attendance details such as time-in, meeting ID, and participant ID.
+
+
+---
+
+12. InsertMeeting
+
+Description:
+Adds a new meeting record into the database.
+Purpose:
+Used when an organizer creates a new meeting from the web interface.
+
+
+---
+
+13. UpdateAttendeeTimeout
+
+Description:
+Updates the time-out or end time for a participant’s attendance record.
+Purpose:
+Tracks both time-in and time-out for accurate meeting duration logging.
+
+
+---
+
+14. UpdateMeeting
+
+Description:
+Modifies existing meeting information such as title, date, or group.
+Purpose:
+Allows organizers or admins to edit meeting details after creation.
+
+
+---
+
+15. UpdateMeetingStatus
+
+Description:
+Changes the meeting’s current status (e.g., Active, Completed, Cancelled).
+Purpose:
+Keeps the system updated with the correct meeting state for display and logic control.
+
+
+---
+
+16. ViewAttendeesReport
+
+Description:
+Generates a detailed report of all attendees per meeting.
+Purpose:
+Used for analytics, printing, or exporting attendance reports by meeting, organizer, or group.
+
+
+---
+
+💻 Web Pages
+
+1. editmeeting.aspx
+
+Description:
+Page for editing or updating meeting details.
+Purpose:
+Allows authorized users to modify meeting information after creation.
+
+
+---
+
+2. historylogs.aspx
+
+Description:
+Displays historical logs of meetings and attendance.
+Purpose:
+Provides a record of past meetings and attendance activity for review or audit.
+
+
+---
+
+3. home.aspx
+
+Description:
+Main dashboard page of the system.
+Purpose:
+Displays summary information such as upcoming meetings, statistics, and shortcuts to key features.
+
+
+---
+
+4. login.aspx
+
+Description:
+User login page.
+Purpose:
+Authenticates users based on their credentials and assigns access based on role.
+
+
+---
+
+5. meetingattendance.aspx
+
+Description:
+Page where participants tap or enter their ID to log attendance.
+Purpose:
+Serves as the main interface for recording attendance in real-time.
+
+
+---
+
+6. meetinglist.aspx
+
+Description:
+Displays a list of all meetings created in the system.
+Purpose:
+Allows users (especially organizers/admins) to view, manage, or open specific meeting details.
+
+
+---
+
+7. viewattendees.aspx
+
+Description:
+Shows the list of attendees for a selected meeting.
+Purpose:
+Used to monitor attendance, check real-time logs, and generate printable reports.
+
+
+---
+
+Would you like me to include a short version (1–2 lines each) formatted for system documentation or database design sheet (like in a table format)?
+
+
