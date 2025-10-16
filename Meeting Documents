@@ -333,4 +333,74 @@ Countermeasure: To ensure smooth and secure operation, the system implements use
 
 ✅ This version keeps your original meaning but reads more naturally and professionally. Would you like me to make it even simpler (for a presentation or summary format)?
 
+---
+
+Here’s a sample Risk Assessment and Risk Control section you can use for your Meeting Attendance Tapping System (web-based system).
+It’s concise, realistic, and applicable to your current project setup.
+
+
+---
+
+🧾 Risk Assessment and Risk Control
+
+1. System Overview
+
+The Meeting Attendance Tapping System automates the recording of attendance through a web interface, where employees tap their ID to log time-in and time-out. Data is stored in a central SQL Server database and accessed by authorized users.
+
+
+---
+
+2. Risk Assessment Table
+
+No.	Risk Description	Possible Cause	Impact	Likelihood	Risk Level	Risk Control / Countermeasure
+
+1	Unauthorized access to attendance records	Weak user authentication or password sharing	Data breach or tampering of records	Medium	High	Implement role-based access control (RBAC); enforce strong password policies and session timeouts.
+2	Duplicate attendance entries	User tapping multiple times or system not validating previous tap	Inaccurate attendance reports	Medium	Medium	Add duplicate entry prevention logic using stored procedures (InsertAttendee with check conditions).
+3	System downtime during meeting	Server crash, network issues, or database failure	Unable to record attendance	High	Medium	Regular system backup, enable error recovery, and implement connection retry logic.
+4	Incorrect time logging	Server time mismatch or manual system clock change	Misleading attendance records	Medium	Low	Use centralized server time; restrict client-side time manipulation.
+5	Loss of data	Database corruption or accidental deletion	Permanent loss of attendance data	High	Low	Perform daily database backups; limit DELETE operations to authorized admins only (MA_DeleteMeeting with confirmation).
+6	SQL Injection or data manipulation	Unsafe query inputs from the web form	Database compromise	High	Medium	Use parameterized stored procedures for all queries (InsertMeeting, GetAttendeesByMeetingId, etc.).
+7	Privacy violation	Exposure of employee details in logs or reports	Breach of confidentiality	Medium	Low	Apply data masking on reports; restrict report access to authorized roles only.
+8	Slow response or lag during tapping	High traffic, unoptimized queries, or inefficient code	Poor user experience	Medium	Medium	Optimize database queries and indexes; enable asynchronous processing for attendance validation.
+9	User error during tapping	Wrong ID entered, network lag, or double click	Attendance not recorded properly	Low	Medium	Implement validation message and real-time status feedback after tapping.
+10	Unauthorized modification of meeting data	Admin misuse or compromised account	Altered attendance records	High	Low	Implement audit logs to track changes and require double confirmation for critical updates.
+
+
+
+---
+
+3. Risk Control Summary
+
+Access Control: Role-based user management (Admin, Organizer, Participant).
+
+Data Validation: Stored procedures handle duplicate and invalid data prevention.
+
+System Security: Parameterized queries, secure authentication, and audit logging.
+
+Data Protection: Regular backups and restricted deletion rights.
+
+Operational Continuity: Local caching and retry mechanism during temporary outages.
+
+Monitoring: Error logs and admin dashboard to detect abnormal activities.
+
+
+
+---
+
+4. Example of Risk Monitoring Procedure
+
+Review logs weekly for failed login attempts or unusual attendance patterns.
+
+Verify daily database backup completion.
+
+Conduct periodic vulnerability assessments.
+
+Ensure users are trained on secure system usage (e.g., not sharing credentials).
+
+
+
+---
+
+Would you like me to make a formatted version (e.g., for a report or document) — with proper headers and layout (Word/PDF style)? I can create it next.
+
 
