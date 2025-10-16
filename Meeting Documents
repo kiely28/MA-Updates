@@ -404,3 +404,19 @@ Ensure users are trained on secure system usage (e.g., not sharing credentials).
 Would you like me to make a formatted version (e.g., for a report or document) — with proper headers and layout (Word/PDF style)? I can create it next.
 
 
+
+Risk Assessment
+Risk Control
+
+Background
+
+Countermeasure
+
+Background: The meeting attendance tapping system was developed to make report generation easier and improve the efficiency of meeting management.
+
+Purpose: To automate and centralize attendance recording for accurate, real-time monitoring and reporting.
+
+Benefits: Improves efficiency, ensures data accuracy, supports multiple users and provides instant access to attendance records.
+
+Countermeasure: To maintain secure the system includes validation and duplicate entry detection 
+
