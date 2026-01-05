@@ -1,0 +1,154 @@
+In my Column K this is the sample data: DEC 01PO WK 
+how to convert into date like this: 12/1/2026
+
+
+before Calculate Wednesday of the next week after PO date
+
+
+CODE:
+
+Sub CompareAndCopyData() ' 11/03/25
+
+    ' Declare all variables used
+    Dim ws As Worksheet              ' Target sheet (in this workbook)
+    Dim wsSrc As Worksheet           ' Source sheet (from opened file)
+    Dim wbSrc As Workbook            ' Source workbook
+    Dim FilePath As Variant          ' Selected file path
+    Dim lastRow As Long              ' Last row in target sheet
+    Dim lastRowSrc As Long           ' Last row in source sheet
+    Dim i As Long                    ' Loop counter
+    Dim FindRng As Range             ' Found cell range
+    Dim SourceValueS As String       ' Value from column S
+    Dim SourceValueT As String       ' Value from column T
+    Dim CommaPosS As Long            ' Position of comma in column S
+    Dim CommaPosT As Long            ' Position of comma in column T
+    Dim S_Before As String, S_After As String
+    Dim T_Before As String, T_After As String
+    Dim poDate As Date, checkDate As Date, targetWednesday As Date
+    Dim dayNum As Integer, daysToNextWednesday As Integer
+
+    ' Speed up execution and prevent screen flicker
+    Application.ScreenUpdating = False
+    'Application.EnableEvents = False
+
+    ' Set target worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1")
+
+    ' To select a source Excel file
+    FilePath = Application.GetOpenFilename("Excel Files (*.xls*), *.xls*")
+    If FilePath = False Then Exit Sub ' Exit if no file selected
+
+    ' Open the selected workbook and set the source sheet
+    Set wbSrc = Workbooks.Open(FilePath)
+    Set wsSrc = wbSrc.Sheets(1)
+
+    ' Find the last used rows
+    lastRow = ws.Cells(ws.Rows.Count, "AI").End(xlUp).Row
+    lastRowSrc = wsSrc.Cells(wsSrc.Rows.Count, "E").End(xlUp).Row
+
+    ' Loop through all rows starting from row 14
+    For i = 14 To lastRow
+        If ws.Cells(i, "AI").Value <> "" Then ' Only if AI has data
+
+            ' Find matching value in source Column E
+            Set FindRng = wsSrc.Range("E2:E" & lastRowSrc).Find( _
+                What:=ws.Cells(i, "AI").Value, LookIn:=xlValues, LookAt:=xlWhole)
+
+            If Not FindRng Is Nothing Then ' If a match is found
+
+                Dim firstAddress As String
+                Dim matchFound As Boolean
+                matchFound = False
+
+                ' Copy column G value to AJ (only if AJ is empty)
+                If Trim(ws.Cells(i, "AJ").Value) = "" Then
+
+                    ' If source G has data, copy it directly
+                    If Trim(wsSrc.Cells(FindRng.Row, "G").Value) <> "" Then
+                        ws.Cells(i, "AJ").Value = wsSrc.Cells(FindRng.Row, "G").Value
+                        matchFound = True
+                    Else
+                        ' If G is empty, find next same E with non-empty G
+                        firstAddress = FindRng.Address
+                        Do
+                            Set FindRng = wsSrc.Range("E2:E" & lastRowSrc).FindNext(FindRng)
+                            If FindRng Is Nothing Then Exit Do
+                            If FindRng.Address = firstAddress Then Exit Do
+                            If Trim(wsSrc.Cells(FindRng.Row, "G").Value) <> "" Then
+                                ws.Cells(i, "AJ").Value = wsSrc.Cells(FindRng.Row, "G").Value
+                                matchFound = True
+                                Exit Do
+                            End If
+                        Loop
+                    End If
+                End If
+
+                ' Copy X - AK and AC - AQ
+                ws.Cells(i, "AK").Value = wsSrc.Cells(FindRng.Row, "X").Value
+                ws.Cells(i, "AQ").Value = wsSrc.Cells(FindRng.Row, "AC").Value
+
+                ' Handle S and T column logic
+                SourceValueS = Trim(wsSrc.Cells(FindRng.Row, "S").Value)
+                SourceValueT = Trim(wsSrc.Cells(FindRng.Row, "T").Value)
+
+                ' Get comma position to split before/after
+                CommaPosS = InStr(1, SourceValueS, ",")
+                CommaPosT = InStr(1, SourceValueT, ",")
+
+                If CommaPosS = 0 Then
+                    ' If no comma, treat as direct values
+                    ws.Cells(i, "AM").Value = SourceValueS & " " & SourceValueT
+                    ws.Cells(i, "AN").Value = "DIRECT"
+                Else
+                    ' Split values before and after comma
+                    S_Before = Trim(Left(SourceValueS, CommaPosS - 1))
+                    S_After = Trim(Mid(SourceValueS, CommaPosS + 1))
+
+                    If CommaPosT > 0 Then
+                        T_Before = Trim(Left(SourceValueT, CommaPosT - 1))
+                        T_After = Trim(Mid(SourceValueT, CommaPosT + 1))
+                    Else
+                        T_Before = SourceValueT
+                        T_After = SourceValueT
+                    End If
+
+                    ' Write separated values
+                    ws.Cells(i, "AM").Value = S_Before & " " & T_Before
+                    ws.Cells(i, "AN").Value = S_After & " " & T_After
+                End If
+
+                ' Calculate Wednesday of the next week after PO date
+                If IsDate(ws.Cells(i, "K").Value) And IsDate(ws.Cells(i, "AK").Value) Then
+                    poDate = ws.Cells(i, "K").Value
+                    checkDate = ws.Cells(i, "AK").Value
+
+                    dayNum = Weekday(poDate, vbSunday)
+                    daysToNextWednesday = ((4 - dayNum) + 7) Mod 7 + 7
+                    targetWednesday = poDate + daysToNextWednesday
+
+                    ' Mark "O" if checkDate >= targetWednesday
+                    If checkDate >= targetWednesday Then
+                        ws.Cells(i, "AX").Value = "O"
+                    Else
+                        ws.Cells(i, "AX").ClearContents
+                    End If
+                End If
+
+            End If
+        End If
+    Next i
+
+    ' Close the source workbook without saving
+    wbSrc.Close SaveChanges:=False
+
+    ' Restore Excel settings
+    Application.ScreenUpdating = True
+    'Application.EnableEvents = True
+
+    ' Notify when done
+    'MsgBox "Process completed.", vbInformation
+
+End Sub
+
+
+
