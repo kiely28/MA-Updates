@@ -1,3 +1,156 @@
+Yes 👍 Conditional Formatting is actually the BEST solution for this case—no VBA, auto-updates instantly, and safer.
+
+Below is a step-by-step conditional formatting formula that will:
+
+Compare current row vs previous row
+
+Check columns 36, 37, 39, 40, 43
+
+If ANY column changed
+
+Color the entire row → Green fill + Red font
+
+Auto-update when data changes
+
+
+
+---
+
+✅ STEP-BY-STEP: Conditional Formatting Rule
+
+1️⃣ Select your data range
+
+Example:
+
+Select from Row 2 downward
+
+
+A2:AZ1000   (adjust as needed)
+
+> Row 1 is header, so we start at Row 2.
+
+
+
+
+---
+
+2️⃣ Create Conditional Formatting Rule
+
+1. Go to Home → Conditional Formatting
+
+
+2. Click New Rule
+
+
+3. Select “Use a formula to determine which cells to format”
+
+
+
+
+---
+
+3️⃣ Paste this Formula
+
+=OR(
+AJ2<>AJ1,
+AK2<>AK1,
+AM2<>AM1,
+AN2<>AN1,
+AQ2<>AQ1
+)
+
+📌 Column reference mapping:
+
+AJ = 36
+
+AK = 37
+
+AM = 39
+
+AN = 40
+
+AQ = 43
+
+
+
+---
+
+4️⃣ Set the Format
+
+Fill → Green
+
+Font color → Red
+
+Click OK → OK
+
+
+
+---
+
+✅ RESULT
+
+If any monitored column differs from the previous row
+
+The entire row turns green with red text
+
+Updates automatically on edit or formula recalculation
+
+No macro required 💯
+
+
+
+---
+
+🔧 OPTIONAL IMPROVEMENTS
+
+Ignore blanks (recommended)
+
+If blanks should not trigger changes:
+
+=OR(
+AND(AJ2<>"",AJ1<>"",AJ2<>AJ1),
+AND(AK2<>"",AK1<>"",AK2<>AK1),
+AND(AM2<>"",AM1<>"",AM2<>AM1),
+AND(AN2<>"",AN1<>"",AN2<>AN1),
+AND(AQ2<>"",AQ1<>"",AQ2<>AQ1)
+)
+
+
+---
+
+Highlight only specific columns (not entire row)
+
+Apply the rule only to:
+
+AJ2, AK2, AM2, AN2, AQ2
+
+
+---
+
+Compare against a fixed reference row (instead of previous row)
+
+Tell me and I’ll adjust the formula.
+
+
+---
+
+If you want, I can:
+
+Convert this to Table format
+
+Add date-based highlighting
+
+Combine with icon sets
+
+Optimize for large datasets
+
+
+Just tell me 👍
+
+
+**
+
+
 Got it 👍
 The issue happens because Column K is only being converted when the later date-check logic runs, so it may update only once or inconsistently.
 
