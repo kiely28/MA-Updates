@@ -1,3 +1,144 @@
+Got it 👍
+The issue happens because Column K is only being converted when the later date-check logic runs, so it may update only once or inconsistently.
+
+✅ Correct approach
+
+👉 Convert Column K at the START of each row loop, so it is updated once per row, independent of any later conditions.
+
+Below is the corrected and clean implementation.
+
+
+---
+
+✅ WHAT CHANGED (IMPORTANT)
+
+Column K conversion is moved to the TOP of the loop
+
+Conversion runs once per row
+
+Wednesday calculation uses the already-converted date
+
+No repeated overwrites
+
+Safe if Column K is already a valid date
+
+
+
+---
+
+✅ UPDATED CODE (READY TO COPY)
+
+🔹 Replace your loop section with this structure
+
+For i = 14 To lastRow
+
+    '==============================
+    ' CONVERT COLUMN K (ONCE ONLY)
+    '==============================
+    Dim rawPO As String
+    Dim poMonth As Integer
+    Dim poDay As Integer
+    Dim poYear As Integer
+
+    rawPO = UCase(Trim(ws.Cells(i, "K").Value))
+
+    ' Convert ONLY if not yet a date
+    If rawPO <> "" And Not IsDate(ws.Cells(i, "K").Value) Then
+
+        Select Case Left(rawPO, 3)
+            Case "JAN": poMonth = 1
+            Case "FEB": poMonth = 2
+            Case "MAR": poMonth = 3
+            Case "APR": poMonth = 4
+            Case "MAY": poMonth = 5
+            Case "JUN": poMonth = 6
+            Case "JUL": poMonth = 7
+            Case "AUG": poMonth = 8
+            Case "SEP": poMonth = 9
+            Case "OCT": poMonth = 10
+            Case "NOV": poMonth = 11
+            Case "DEC": poMonth = 12
+            Case Else: poMonth = 0
+        End Select
+
+        poDay = Val(Mid(rawPO, 5, 2))
+        poYear = 2026   ' <<< change if needed
+
+        If poMonth > 0 And poDay > 0 Then
+            ws.Cells(i, "K").Value = DateSerial(poYear, poMonth, poDay)
+            ws.Cells(i, "K").NumberFormat = "m/d/yyyy"
+        End If
+    End If
+    '==============================
+    ' END COLUMN K CONVERSION
+    '==============================
+
+
+    ' --- EXISTING LOGIC CONTINUES ---
+    If ws.Cells(i, "AI").Value <> "" Then
+
+        Set FindRng = wsSrc.Range("E2:E" & lastRowSrc).Find( _
+            What:=ws.Cells(i, "AI").Value, LookIn:=xlValues, LookAt:=xlWhole)
+
+        If Not FindRng Is Nothing Then
+
+            ' (your existing copy logic here…)
+
+            '=============================================
+            ' CALCULATE WEDNESDAY OF NEXT WEEK AFTER PO
+            '=============================================
+            If IsDate(ws.Cells(i, "K").Value) And IsDate(ws.Cells(i, "AK").Value) Then
+
+                poDate = ws.Cells(i, "K").Value
+                checkDate = ws.Cells(i, "AK").Value
+
+                dayNum = Weekday(poDate, vbSunday)
+                daysToNextWednesday = ((4 - dayNum) + 7) Mod 7 + 7
+                targetWednesday = poDate + daysToNextWednesday
+
+                If checkDate >= targetWednesday Then
+                    ws.Cells(i, "AX").Value = "O"
+                Else
+                    ws.Cells(i, "AX").ClearContents
+                End If
+            End If
+            '=============================================
+
+        End If
+    End If
+
+Next i
+
+
+---
+
+✅ RESULT
+
+✔ Column K is converted once per row
+✔ Conversion is independent of the Wednesday logic
+✔ No duplicate or skipped updates
+✔ Wednesday calculation always uses a real date
+
+
+---
+
+🔧 OPTIONAL (If you want)
+
+I can:
+
+Make the year dynamic (from C12 or fiscal year logic)
+
+Move the conversion into a Function for cleaner code
+
+Support formats like DEC01PO, DEC-01, DEC 1
+
+
+Just tell me 👍
+
+
+**
+
+
 In my Column K this is the sample data: DEC 01PO WK 
 how to convert into date like this: 12/1/2026
 
