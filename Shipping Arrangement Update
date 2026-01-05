@@ -152,3 +152,125 @@ End Sub
 
 
 
+***
+
+
+Below is a safe and copy-paste–ready solution that converts Column K text like
+DEC 01PO WK → 12/1/2026 (real Date value)
+before your existing “Calculate Wednesday of the next week after PO date” logic runs.
+
+I will not change your logic, only insert a conversion block before it, exactly as requested.
+
+
+---
+
+✅ What the solution does
+
+Extracts Month (DEC)
+
+Extracts Day (01)
+
+Ignores trailing text (PO WK)
+
+Converts it to a real VBA Date
+
+Forces Year = 2026 (you can change this easily)
+
+Writes the converted date back into Column K
+
+
+
+---
+
+✅ ADD THIS CODE BLOCK
+
+📍 Insert this just BEFORE:
+
+' Calculate Wednesday of the next week after PO date
+If IsDate(ws.Cells(i, "K").Value) And IsDate(ws.Cells(i, "AK").Value) Then
+
+
+---
+
+🔹 PO Date Text → Date Conversion (Column K)
+
+' --- Convert PO Date text like "DEC 01PO WK" to Date (12/1/2026) ---
+Dim rawPO As String
+Dim poMonth As Integer
+Dim poDay As Integer
+Dim poYear As Integer
+
+rawPO = UCase(Trim(ws.Cells(i, "K").Value))
+
+' Only convert if Column K is NOT already a date
+If Not IsDate(ws.Cells(i, "K").Value) Then
+
+    ' Extract month (first 3 letters)
+    Select Case Left(rawPO, 3)
+        Case "JAN": poMonth = 1
+        Case "FEB": poMonth = 2
+        Case "MAR": poMonth = 3
+        Case "APR": poMonth = 4
+        Case "MAY": poMonth = 5
+        Case "JUN": poMonth = 6
+        Case "JUL": poMonth = 7
+        Case "AUG": poMonth = 8
+        Case "SEP": poMonth = 9
+        Case "OCT": poMonth = 10
+        Case "NOV": poMonth = 11
+        Case "DEC": poMonth = 12
+        Case Else: poMonth = 0
+    End Select
+
+    ' Extract day (characters 5–6 → "01")
+    If poMonth > 0 And Len(rawPO) >= 6 Then
+        poDay = Val(Mid(rawPO, 5, 2))
+    End If
+
+    ' Set year (CHANGE if needed)
+    poYear = 2026
+
+    ' Build date if valid
+    If poMonth > 0 And poDay > 0 Then
+        ws.Cells(i, "K").Value = DateSerial(poYear, poMonth, poDay)
+        ws.Cells(i, "K").NumberFormat = "m/d/yyyy"
+    End If
+
+End If
+' --- End PO Date Conversion ---
+
+
+---
+
+✅ RESULT
+
+Original (K)	After Macro
+
+DEC 01PO WK	12/1/2026
+JAN 15PO WK	1/15/2026
+
+
+Column K becomes a real date, so your existing logic:
+
+If IsDate(ws.Cells(i, "K").Value)
+
+✅ WILL NOW WORK CORRECTLY
+
+
+---
+
+🔧 Optional Improvements (tell me if you want these)
+
+Auto-detect year based on fiscal year
+
+Take year from another column (ex: C12)
+
+Handle formats like DEC01 PO WK, DEC-01, etc.
+
+Move conversion into a reusable function
+
+
+Just tell me 👍
+
+
+
