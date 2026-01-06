@@ -1,3 +1,80 @@
+Perfect — we’ll keep the row background GREEN, but make the font RED only for columns 36, 37, 39, 40, and 43 👍
+This version also ignores row insert/delete.
+
+
+---
+
+✅ FINAL WORKING VBA CODE
+
+📌 Paste this inside the worksheet code (Sheet1, etc.)
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+    Dim chkCols As Range
+    Dim c As Range
+
+    ' Ignore row/column insert or delete
+    If Target.Rows.Count > 1 Or Target.Columns.Count > 1 Then Exit Sub
+
+    ' Columns to monitor
+    Set chkCols = Union(Me.Columns(36), Me.Columns(37), _
+                        Me.Columns(39), Me.Columns(40), _
+                        Me.Columns(43))
+
+    ' Exit if change is outside monitored columns
+    If Intersect(Target, chkCols) Is Nothing Then Exit Sub
+
+    Application.EnableEvents = False
+
+    For Each c In Intersect(Target, chkCols)
+
+        ' Set entire row background to GREEN
+        Me.Rows(c.Row).Interior.Color = RGB(0, 255, 0)
+
+        ' Set font color RED only for the changed column
+        c.Font.Color = RGB(255, 0, 0)
+
+    Next c
+
+    Application.EnableEvents = True
+
+End Sub
+
+
+---
+
+🎯 RESULT
+
+Action	Effect
+
+Edit col 36 / 37 / 39 / 40 / 43	Row turns GREEN
+Only those columns	Font turns RED
+Insert/Delete row	❌ No highlight
+Edit other columns	❌ No effect
+Type mismatch errors	❌ None
+
+
+
+---
+
+🔧 Optional upgrades (just tell me):
+
+Reset formatting if value is cleared
+
+Highlight only once (no re-trigger)
+
+Store “changed rows” even after reopening
+
+Convert this logic to Conditional Formatting
+
+
+You’re very close to a production-ready Excel tracker 👌
+
+
+
+***
+
+
 Good observation 👍
 That happens because row insert / row delete also triggers Worksheet_Change, and Excel treats it as a “change” in those columns.
 
