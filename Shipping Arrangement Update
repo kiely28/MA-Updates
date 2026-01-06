@@ -1,3 +1,33 @@
+Here’s a polished and corrected version of your email. I kept your structure and tone, just fixed minor grammar and wording for clarity 👍
+
+Good day,
+
+Please see the attached updated macro file with the following changes:
+
+1. Column K Update
+
+   - Column K now automatically converts the PO Week value into a proper date format.
+
+2. Row Highlight Behavior Update
+
+   - The row highlighting logic has been improved to prevent rows from being highlighted when new rows are added or existing rows are deleted.
+   - Highlighting will now apply only when there is an actual data change in the specified columns.
+
+Please let me know if this is working as expected or if there are any further adjustments needed.
+
+Thank you.
+
+Best regards,
+Kheanne MaldiaIf you want, I can also:
+
+Make it more casual
+
+Add a screenshot reference
+
+Adjust it to sound more formal or concise
+
+**
+
 Sure 👍
 We’ll limit the green highlight to columns A–AK only, while keeping:
 
