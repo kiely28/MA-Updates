@@ -1,3 +1,110 @@
+Sure 👍
+We’ll limit the green highlight to columns A–AK only, while keeping:
+
+🔴 Red font only in columns 36, 37, 39, 40, 43
+
+♻️ Reset formatting when all monitored values are cleared
+
+🚫 Ignore row insert / delete
+
+▶️ Auto-run on change
+
+
+
+---
+
+✅ FINAL VBA CODE (Row highlight A → AK only)
+
+📌 Paste this into the worksheet code
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+    Dim c As Range
+    Dim r As Long
+    Dim hasValue As Boolean
+    Dim col As Variant
+    Dim watchCols As Variant
+
+    ' Ignore insert/delete rows or columns
+    If Target.Rows.Count > 1 Or Target.Columns.Count > 1 Then Exit Sub
+
+    ' Columns to monitor (numbers)
+    watchCols = Array(36, 37, 39, 40, 43)
+
+    ' Exit if change is not in monitored columns
+    If Intersect(Target, Me.Range("AJ:AJ,AK:AK,AM:AM,AN:AN,AQ:AQ")) Is Nothing Then Exit Sub
+
+    Application.EnableEvents = False
+
+    For Each c In Target
+
+        r = c.Row
+        hasValue = False
+
+        ' Check if ANY monitored column has a value
+        For Each col In watchCols
+            If Trim(Me.Cells(r, col).Value & "") <> "" Then
+                hasValue = True
+                Exit For
+            End If
+        Next col
+
+        If hasValue Then
+            ' Highlight row from column A to AK only
+            Me.Range("A" & r & ":AK" & r).Interior.Color = RGB(0, 255, 0)
+
+            ' Set red font only in monitored columns
+            If Not IsError(Application.Match(c.Column, watchCols, 0)) Then
+                c.Font.Color = RGB(255, 0, 0)
+            End If
+        Else
+            ' Reset background A:AK
+            Me.Range("A" & r & ":AK" & r).Interior.Pattern = xlNone
+
+            ' Reset font color in monitored columns
+            For Each col In watchCols
+                Me.Cells(r, col).Font.ColorIndex = xlAutomatic
+            Next col
+        End If
+
+    Next c
+
+    Application.EnableEvents = True
+
+End Sub
+
+
+---
+
+🎯 RESULT SUMMARY
+
+Action	Result
+
+Edit AJ, AK, AM, AN, AQ	A–AK row turns 🟢
+Those columns only	Font turns 🔴
+Clear all monitored cells	Formatting resets
+Insert / delete row	❌ Ignored
+Edit other columns	❌ No effect
+
+
+
+---
+
+🔧 Want enhancements?
+
+Different colors per column
+
+Partial reset (cell only)
+
+Log changed rows to another sheet
+
+Make A–AK dynamic (based on last used column)
+
+
+Just tell me 👍
+
+** 
+
 Got it 👍
 Below is the enhanced version that will:
 
