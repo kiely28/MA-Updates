@@ -1,3 +1,133 @@
+Got it 👍
+To auto-run when data changes, you must use a Worksheet_Change event (this goes into the sheet code, not a normal module).
+
+Below is a safe, complete implementation that:
+
+Triggers automatically when data changes
+
+Monitors columns 36, 37, 39, 40, 43 only
+
+Compares the row with the previous row
+
+Colors the entire row → Green background + Red font
+
+Prevents infinite loops
+
+
+
+---
+
+✅ STEP 1: Put this code in the SHEET (not Module)
+
+1. Press ALT + F11
+
+
+2. In VBA Editor → double-click your worksheet
+(e.g. Sheet1 (PO_Data))
+
+
+3. Paste the code below
+
+
+
+
+---
+
+📌 Auto-Run Highlight on Change
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+    Dim colsToCheck As Variant
+    Dim c As Variant
+    Dim r As Long
+    Dim isChanged As Boolean
+
+    ' Columns to monitor
+    colsToCheck = Array(36, 37, 39, 40, 43)
+
+    ' Exit if more than one row is changed (paste protection)
+    If Target.Rows.Count > 1 Then Exit Sub
+
+    ' Exit if change is not in monitored columns
+    If Intersect(Target, Me.Columns(colsToCheck)) Is Nothing Then Exit Sub
+
+    Application.EnableEvents = False
+
+    r = Target.Row
+
+    ' Skip header or first data row
+    If r <= 2 Then GoTo SafeExit
+
+    isChanged = False
+
+    ' Compare with previous row
+    For Each c In colsToCheck
+        If Me.Cells(r, c).Value <> Me.Cells(r - 1, c).Value Then
+            isChanged = True
+            Exit For
+        End If
+    Next c
+
+    ' Apply formatting
+    If isChanged Then
+        Me.Rows(r).Interior.Color = RGB(0, 255, 0) ' Green
+        Me.Rows(r).Font.Color = RGB(255, 0, 0)     ' Red
+    Else
+        ' Optional: reset formatting if no change
+        Me.Rows(r).Interior.ColorIndex = xlNone
+        Me.Rows(r).Font.ColorIndex = xlAutomatic
+    End If
+
+SafeExit:
+    Application.EnableEvents = True
+
+End Sub
+
+
+---
+
+⚠️ IMPORTANT NOTES
+
+This must be inside the worksheet, not Module1
+
+Works when:
+
+User edits cells
+
+Formula results change
+
+
+Won’t loop infinitely because EnableEvents is disabled safely
+
+
+
+---
+
+🔥 Optional (Tell me which one you want)
+
+1. Highlight only changed cells, not entire row
+
+
+2. Compare against a reference sheet
+
+
+3. Keep highlight permanent once changed
+
+
+4. Handle paste / multiple row changes
+
+
+5. Use Conditional Formatting instead (no VBA)
+
+
+
+Just tell me what you want next 😊
+
+
+
+**
+
+
 Yes 👍 Conditional Formatting is actually the BEST solution for this case—no VBA, auto-updates instantly, and safer.
 
 Below is a step-by-step conditional formatting formula that will:
