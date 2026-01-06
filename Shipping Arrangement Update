@@ -1,3 +1,117 @@
+Below is a safe, copy-paste ready VBA solution that:
+
+Automatically runs when data changes
+
+Highlights the entire row GREEN
+
+Changes the font to RED
+
+Triggers only when columns 36, 37, 39, 40, or 43 change
+
+Avoids “Type mismatch” errors when editing other columns
+
+
+
+---
+
+✅ How it works
+
+Uses Worksheet_Change (event-based, auto run)
+
+Checks only the specified columns
+
+Formats only the affected row
+
+Disables events temporarily to prevent loops
+
+
+
+---
+
+📌 Columns involved
+
+Column Number	Column Letter
+
+36	AJ
+37	AK
+39	AM
+40	AN
+43	AQ
+
+
+
+---
+
+🧩 VBA CODE (Put this in the worksheet, NOT a module)
+
+Steps:
+
+1. Press ALT + F11
+
+
+2. Double-click the sheet name (e.g. Sheet1)
+
+
+3. Paste this code 👇
+
+
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+    Dim chkCols As Range
+    Dim c As Range
+
+    ' Columns to monitor
+    Set chkCols = Union(Me.Columns(36), Me.Columns(37), _
+                        Me.Columns(39), Me.Columns(40), _
+                        Me.Columns(43))
+
+    ' Exit if change is outside monitored columns
+    If Intersect(Target, chkCols) Is Nothing Then Exit Sub
+
+    Application.EnableEvents = False
+
+    For Each c In Intersect(Target, chkCols)
+        With Me.Rows(c.Row)
+            .Interior.Color = RGB(0, 255, 0) ' Green background
+            .Font.Color = RGB(255, 0, 0)     ' Red font
+        End With
+    Next c
+
+    Application.EnableEvents = True
+
+End Sub
+
+
+---
+
+⚠️ Why this avoids Type Mismatch errors
+
+No comparison of old vs new values (which causes errors)
+
+Only reacts to where the change happened
+
+Uses Intersect safely
+
+
+
+---
+
+🟢 Optional Enhancements (tell me if you want):
+
+Compare old vs new value before highlighting
+
+Highlight only specific columns, not entire row
+
+Reset formatting if value is reverted
+
+Convert this to Conditional Formatting instead
+
+
+If you want a version that detects actual value change (before vs after), just say 👍
+
+** other prompt
+
 Got it 👍
 To auto-run when data changes, you must use a Worksheet_Change event (this goes into the sheet code, not a normal module).
 
