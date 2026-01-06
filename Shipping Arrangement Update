@@ -1,3 +1,100 @@
+Good observation 👍
+That happens because row insert / row delete also triggers Worksheet_Change, and Excel treats it as a “change” in those columns.
+
+To fix this, we need to ignore structural changes (insert/delete) and only react to actual cell edits.
+
+
+---
+
+✅ FIXED & SAFE VERSION (ignores insert/delete rows)
+
+✔ What this version does
+
+✅ Highlights only when a cell value is edited
+
+❌ Does NOT highlight when:
+
+inserting a row
+
+deleting a row
+
+pasting entire rows
+
+
+✅ No type mismatch errors
+
+
+
+---
+
+🔧 Updated VBA Code (replace your existing code)
+
+📌 Still goes inside the worksheet code
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+    Dim chkCols As Range
+    Dim c As Range
+
+    ' Ignore whole-row or whole-column changes (insert/delete)
+    If Target.Rows.Count > 1 Or Target.Columns.Count > 1 Then Exit Sub
+
+    ' Columns to monitor
+    Set chkCols = Union(Me.Columns(36), Me.Columns(37), _
+                        Me.Columns(39), Me.Columns(40), _
+                        Me.Columns(43))
+
+    ' Exit if change is outside monitored columns
+    If Intersect(Target, chkCols) Is Nothing Then Exit Sub
+
+    Application.EnableEvents = False
+
+    For Each c In Intersect(Target, chkCols)
+        With Me.Rows(c.Row)
+            .Interior.Color = RGB(0, 255, 0) ' Green row
+            .Font.Color = RGB(255, 0, 0)     ' Red font
+        End With
+    Next c
+
+    Application.EnableEvents = True
+
+End Sub
+
+
+---
+
+🧠 Why this works
+
+If Target.Rows.Count > 1 Or Target.Columns.Count > 1 Then Exit Sub
+
+Row insert/delete affects multiple cells
+
+Actual typing affects only one cell
+
+This line filters them out completely
+
+
+
+---
+
+🔁 OPTIONAL (Recommended)
+
+If you want:
+
+Reset row color when values are cleared
+
+Detect real value change (before vs after)
+
+Only color specific columns instead of full row
+
+Keep highlight even after workbook reopens
+
+
+Just tell me which one you want next 👍
+
+
+**
+
 Below is a safe, copy-paste ready VBA solution that:
 
 Automatically runs when data changes
