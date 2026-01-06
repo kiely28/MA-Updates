@@ -1,3 +1,115 @@
+Got it 👍
+Below is the enhanced version that will:
+
+✅ Behavior
+
+Row turns GREEN when any of the monitored columns is edited
+
+Font turns RED only in the monitored columns
+
+If a monitored cell is CLEARED:
+
+That cell’s font color is reset
+
+If ALL monitored columns in that row are empty, the row formatting is fully reset
+
+
+❌ Insert/Delete row is ignored
+
+❌ No type mismatch errors
+
+
+
+---
+
+✅ FINAL VBA CODE (WITH RESET LOGIC)
+
+📌 Paste this into the worksheet code
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+    Dim chkCols As Range
+    Dim c As Range
+    Dim r As Long
+    Dim hasValue As Boolean
+    Dim col As Variant
+
+    ' Ignore insert/delete rows or columns
+    If Target.Rows.Count > 1 Or Target.Columns.Count > 1 Then Exit Sub
+
+    ' Columns to monitor
+    Set chkCols = Union(Me.Columns(36), Me.Columns(37), _
+                        Me.Columns(39), Me.Columns(40), _
+                        Me.Columns(43))
+
+    ' Exit if change is outside monitored columns
+    If Intersect(Target, chkCols) Is Nothing Then Exit Sub
+
+    Application.EnableEvents = False
+
+    For Each c In Intersect(Target, chkCols)
+
+        r = c.Row
+        hasValue = False
+
+        ' Check if ANY monitored column in the row has a value
+        For Each col In Array(36, 37, 39, 40, 43)
+            If Trim(Me.Cells(r, col).Value & "") <> "" Then
+                hasValue = True
+                Exit For
+            End If
+        Next col
+
+        If hasValue Then
+            ' Apply formatting
+            Me.Rows(r).Interior.Color = RGB(0, 255, 0)
+            c.Font.Color = RGB(255, 0, 0)
+        Else
+            ' Reset formatting if all monitored cells are empty
+            Me.Rows(r).Interior.Pattern = xlNone
+
+            For Each col In Array(36, 37, 39, 40, 43)
+                Me.Cells(r, col).Font.ColorIndex = xlAutomatic
+            Next col
+        End If
+
+    Next c
+
+    Application.EnableEvents = True
+
+End Sub
+
+
+---
+
+🧠 Logic Explained (Simple)
+
+Clears only when all monitored columns are empty
+
+Prevents accidental loss of highlight if one column still has data
+
+Safe for manual typing, paste, delete
+
+
+
+---
+
+🔧 Optional (can add next):
+
+Reset formatting only for the cleared cell
+
+Keep history of changed rows
+
+Apply borders instead of fill color
+
+Make colors configurable via cells
+
+
+Just tell me 👍
+
+
+***
+
 Perfect — we’ll keep the row background GREEN, but make the font RED only for columns 36, 37, 39, 40, and 43 👍
 This version also ignores row insert/delete.
 
