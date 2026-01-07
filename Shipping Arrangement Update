@@ -1,5 +1,25 @@
 Good day!
 
+The macro file has already been updated and attached for your reference. The latest version includes the following:
+
+- The PO Week format has been retained
+- The affected columns have been moved from AX to AZ
+- For the PO Week conversion, Column BA (which is hidden upon opening the Excel file) is used to check and validate the OB date in Column AK
+
+Please let me know if this is working as expected or if there are any further adjustments needed.
+
+Thank you po.
+
+Best regards,
+King
+
+
+
+**
+
+
+Good day!
+
 Thank you for the feedback. Noted on the additional change — I will update the macro to move the affected columns from AX to AZ.
 
 I’ll send the updated file once the change is completed. Please let me know if there’s anything else you’d like me to adjust.
